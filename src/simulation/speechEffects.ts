@@ -1,0 +1,829 @@
+import type { Agent, AgentState } from "./types";
+import type { SpeechEvent, SpeechIntent, SpeechReason } from "./speech";
+import { clamp } from "./model";
+
+/**
+ * Phase 3: `SpeechEvent`(発言そのもの)から介入効果に至るまでの因果イベントモデル。
+ *
+ * `speech.ts`のコメントにある責務差を踏まえた、このファイル固有の責務差:
+ * - `ExpressionEvent`(`expression.ts`): 観察者にのみ見える非介入の演出データ。誰にも認知されない。
+ * - `SpeechEvent`(`speech.ts`): 実際に発せられ他エージェントが認知しうる発言そのもの。
+ *   誰が聞いたか・どう解釈したか・何に作用するかは一切持たない(Phase 2のスコープ)。
+ * - `LogEntry`(`types.ts`): 人間可読な出来事の記録・集計用。意思決定の入力にはならない。
+ * - `SpeechReceptionEvent`(本ファイル): `SpeechEvent`1件につき、認知対象になった受け手ごとに
+ *   1件生成される「聞こえたか」の記録。Issue #94により、`SpeechEvent`の発言時点位置(`originX`/`originY`)
+ *   と受け手候補の位置から実際に距離を計算し、`audibility`(=range*strength)としきい値比較して判定する
+ *   (旧: `target`/`audience`のみで判定する二値モデル。詳細は`docs/speech-reception-distance-model.md`)。
+ * - `SpeechInterpretationEvent`(本ファイル): `SpeechReceptionEvent`1件につき、受け手の性格
+ *   (`conformity`/`influenceAvoidance`)・話者との関係(同一clique/`existingTieStrength`から導出する
+ *   基礎信頼)・現在の`stress`/`state`・target/nearbyの別・`SpeechEvent.strength`を要因として、
+ *   決定的な数値モデルでどう解釈したか(`valence`/`intensity`)を`factors`の内訳付きで記録する(Issue #95)。
+ *   `heard: false`の受信(聞こえなかった)は解釈対象にならない。
+ *   **これは実在の人間の受け止め方を断定的に分類・予測するモデルではなく、シミュレーション内の
+ *   決定的な数値ルールに過ぎない。** 可変の「信頼学習」(発言を重ねるほど信頼が変化する等)や
+ *   本心と建前の不一致、発言の真実性判定は対応しない範囲。
+ * - `SpeechEffectEvent`(本ファイル): `SpeechInterpretationEvent`1件につき、どの状態次元へ・どの強度/期間で
+ *   作用しうるかを構造化して保持する記録。`deriveSpeechEffects`自体は引き続き記録を生成するだけの
+ *   純粋関数で、Agent/SimulationStateを参照・変更しない。
+ * - `SpeechActiveEffect`(本ファイル、Issue #96): `SpeechEffectEvent`1件につき1件生成される、実際に
+ *   `engine.ts`の判断式(stress蓄積率/attractiveness/接近確率/leave判定のしきい値)へ加算される
+ *   持続効果。`startedAtTick`から`expiresAtTick`まで線形減衰し、`SimulationState.activeSpeechEffects`
+ *   に保持されて毎tick更新される。`willingness`等の恒常的なpersonality値そのものは変更しない
+ *   (一時的な補正としてのみ適用される)。詳細は`docs/speech-effects-application-model.md`参照。
+ *
+ * 3段階(reception -> interpretation -> effect)は`speechEventId`で、interpretation/effectは
+ * さらに`receptionEventId`/`interpretationEventId`で前段と一意に関連付けられる。全段が`receiverId`も
+ * 保持するため、「誰にとっての記録か」はどの段からでも直接参照できる。
+ *
+ * Phase 3.1(#94)の対応しない範囲(認知判定`deriveSpeechReceptions`側):
+ * - 遮蔽物・方向・騒音場の物理モデル(距離としきい値比較のみ。障害物や音の伝わり方は考慮しない)
+ * - 確率的な聞き漏らし(`heard`は距離としきい値から一意に決まる決定的な判定であり、rngは使わない)
+ * - 心理状態や行動選択への効果(認知判定はAgent.stress等を一切変更しない)
+ * - UI表示(Inspector等の表示層は引き続き`SpeechEvent`の`target`/`audience`ベースの簡略化を使う。
+ *   `docs/speech-reception-distance-model.md`参照)
+ *
+ * Issue #95(受け手別の解釈モデル、`deriveSpeechInterpretations`)の対応しない範囲:
+ * - 時間とともに変化する信頼・評判(常に現在の関係性から一意に導出する固定値のみを使う)
+ * - 発言の真実性判定・本心と建前の不一致・LLMによる文章解釈
+ *   (詳細は`docs/speech-interpretation-model.md`参照)
+ *
+ * Issue #96(発言効果の持続・減衰付き適用、`deriveSpeechActiveEffects`/`engine.ts`)の対応しない範囲:
+ * - 永続的な性格・信頼・関係性更新(`willingness`/`conformity`/`influenceAvoidance`等は不変のまま)
+ * - 新しい発言intent、UI可視化、Monte Carlo比較
+ *   (詳細は`docs/speech-effects-application-model.md`参照)
+ *
+ * Issue #97(複数発言の競合・累積・更新・上限制御、`aggregateActiveEffects`/`registerActiveSpeechEffects`)
+ * が対応した範囲: 同一受け手・同一次元(・attractivenessなら同一targetGroupId)への複数`SpeechActiveEffect`の
+ * 決定的な集約規則。詳細は`docs/speech-effects-aggregation-model.md`参照。対応しなかった範囲:
+ * - 会話ターン・返答生成、信頼・評判の永続更新、新規intentテンプレート、UI表示・Monte Carlo比較
+ */
+
+/** Phase 3効果の生成有無を切り替える設定境界。既存の`SimParams`/`InterventionRuntimeOptions`とは独立 */
+export type SpeechEffectsConfig = {
+  /**
+   * false(デフォルト)の場合、`deriveSpeechReceptions`/`deriveSpeechInterpretations`/
+   * `deriveSpeechEffects`はいずれも空配列を返す。既存の設定・挙動との後方互換のためのデフォルト値。
+   */
+  enabled: boolean;
+};
+
+/** 未指定時に使う既定値。既存の呼び出し元(engine.ts以前からの利用箇所)を一切変更せずに済むよう無効化しておく */
+export const DEFAULT_SPEECH_EFFECTS_CONFIG: SpeechEffectsConfig = { enabled: false };
+
+/** 部分指定を`DEFAULT_SPEECH_EFFECTS_CONFIG`で補完した`SpeechEffectsConfig`を返す */
+export function resolveSpeechEffectsConfig(config?: Partial<SpeechEffectsConfig>): SpeechEffectsConfig {
+  return { ...DEFAULT_SPEECH_EFFECTS_CONFIG, ...config };
+}
+
+/** `SpeechEvent`のtarget/audienceのどちらの経路で認知対象になったか */
+export type SpeechReceptionRelation = "target" | "audience";
+
+/** `heard`がtrue/falseになった理由。距離としきい値の比較のみを扱う(遮蔽物等は対応しない範囲) */
+export type SpeechReceptionReason = "withinRange" | "outOfRange";
+
+/**
+ * 認知判定の対象候補として`deriveSpeechReceptions`が必要とする最小限のAgent情報。
+ * `Agent`型全体を要求せず、位置(`x`/`y`)と生存状態(`state`)だけに絞ることで、
+ * このファイルが認知判定に無関係なAgentのフィールド(willingness等)に依存しないようにする。
+ */
+export type SpeechReceiverCandidate = Pick<Agent, "id" | "x" | "y" | "state">;
+
+/**
+ * 「誰が認知対象になり、聞こえたか」の記録。1件の`SpeechEvent`につき、認知対象になった
+ * 受け手ごとに1件生成される。`heard`は発言時点の話者位置(`SpeechEvent.originX`/`originY`)から
+ * 受け手までの距離(`distance`)と、しきい値(`threshold`、`SpeechEvent.audibility`と同値)の
+ * 比較で決定的に決まる(Issue #94)。
+ */
+export type SpeechReceptionEvent = {
+  id: string;
+  speechEventId: string;
+  /** 発言(=認知)が発生したtick。`SpeechEvent.tick`と同一 */
+  tick: number;
+  receiverId: string;
+  relation: SpeechReceptionRelation;
+  /** 発言時点の話者位置(`SpeechEvent.originX`/`originY`)から受け手までの距離 */
+  distance: number;
+  /** 判定に使ったしきい値(= `SpeechEvent.audibility`)。遡って再計算せずに済むよう複製して保持する */
+  threshold: number;
+  heard: boolean;
+  reason: SpeechReceptionReason;
+};
+
+/**
+ * `deriveSpeechInterpretations`が導く解釈の作用方向。intentごとの基礎方向
+ * (invite/welcome/greetは正、declineは負)を出発点に、受け手の性格・関係性・状態で強度が変わる
+ * (Issue #95)。最終`intensity`が`NEUTRAL_INTENSITY_THRESHOLD`未満まで弱まった場合は、
+ * 基礎方向によらず"neutral"として扱う(「ほぼ何も感じなかった」を方向なしとして丸める)。
+ */
+export type SpeechInterpretationValence = "positive" | "neutral" | "negative";
+
+/**
+ * `deriveSpeechInterpretations`が解釈強度を構成する各要因を説明可能にするための内訳1件分。
+ * `rawValue`は正規化前の生値(性格パラメータやstress、`SpeechEvent.strength`等)、
+ * `normalizedValue`は0〜1(内容によりそれ以上)へ丸めた値、`contribution`はこの要因が最終
+ * `intensity`の乗算計算に実際に寄与した係数(0以上。方向の符号は`SpeechInterpretationEvent.valence`側で表現する)。
+ */
+export type SpeechInterpretationFactor = {
+  key:
+    | "intentBase"
+    | "conformity"
+    | "influenceAvoidance"
+    | "relationshipTrust"
+    | "receiverStress"
+    | "receiverState"
+    | "receptionRelation"
+    | "strength";
+  rawValue: number;
+  normalizedValue: number;
+  contribution: number;
+};
+
+/**
+ * `SpeechReceptionEvent`1件につき、受け手がどの要因でどう解釈したかの記録(Issue #95)。
+ * `factors`が入力値・正規化値・寄与の内訳、`intensity`(0〜1)が最終解釈強度、`valence`が作用方向。
+ *
+ * **重要: これは実在の人間の受け止め方を断定的に分類・予測するモデルではない。** 性格パラメータ
+ * (`conformity`/`influenceAvoidance`)・関係性(`existingTieStrength`・同一clique)・`stress`/`state`から
+ * 決定的に導かれる、シミュレーション内の数値ルールに過ぎず、現実の人間の解釈を代表・断定するものではない。
+ */
+export type SpeechInterpretationEvent = {
+  id: string;
+  speechEventId: string;
+  receptionEventId: string;
+  tick: number;
+  receiverId: string;
+  intent: SpeechIntent;
+  /** 発言がtarget宛てだったかnearby(周囲)向けだったか。`SpeechReceptionEvent.relation`と同値 */
+  relation: SpeechReceptionRelation;
+  valence: SpeechInterpretationValence;
+  /** 最終的な解釈強度(0〜1にclamp済み) */
+  intensity: number;
+  /** intensityを構成した各要因の内訳。`intentBase`から`strength`まで固定順で保持する */
+  factors: SpeechInterpretationFactor[];
+};
+
+/**
+ * 効果が作用しうる状態次元(Issue #96)。intentごとに1次元だけを固定で割り当てる(`INTENT_DIMENSION`)。
+ * - "stress": undecided中のstress蓄積率への補正(即時diffではなく、tick毎の増分に加算する形)
+ * - "attractiveness": 特定のGroupCandidateへの`attractiveness()`スコアへの加算補正
+ * - "approachProbability": 輪への接近確率への加算補正
+ * - "leaveThreshold": leave判定で使う実効しきい値(`agent.leaveThreshold`本体は変更しない)への加算補正
+ */
+export type SpeechEffectDimension = "stress" | "attractiveness" | "approachProbability" | "leaveThreshold";
+
+/**
+ * 「どの状態次元へ、どの強度・期間で作用するか」を構造化して保持する記録。
+ * `occurredTick`(発言・認知・解釈が発生したtick)と`appliedTick`(効果が適用されるべきtick)を
+ * 分けて持つのは、Phase 3時点では両者が常に同一tickであっても、将来「解釈から少し遅れて効果が
+ * 現れる」ような遅延効果を導入する余地を型として残しておくため。
+ */
+export type SpeechEffectEvent = {
+  id: string;
+  speechEventId: string;
+  interpretationEventId: string;
+  receiverId: string;
+  /** 発言主体。Issue #97: 同一話者・同一intentの再発言を`registerActiveSpeechEffects`が判定するために保持する */
+  speakerId: string;
+  intent: SpeechIntent;
+  reason: SpeechReason;
+  occurredTick: number;
+  appliedTick: number;
+  dimension: SpeechEffectDimension;
+  outputValue: number;
+  durationTicks: number;
+};
+
+/**
+ * `deriveSpeechInterpretations`が必要とする最小限のAgent情報。位置・生存状態だけに絞った
+ * `SpeechReceiverCandidate`とは異なり、解釈の入力要因になる性格パラメータ・関係性・現在状態を持つ。
+ * 話者自身の`cliqueId`(同一clique判定用)を引くためにも同じ配列に含めて渡す。
+ */
+export type SpeechInterpreterCandidate = Pick<
+  Agent,
+  "id" | "conformity" | "influenceAvoidance" | "cliqueId" | "stress" | "state" | "joinedGroupId"
+>;
+
+/**
+ * intentごとの基礎的な意味と作用方向(Issue #95の受入条件)。invite/welcomeは接近可能性・安心感を
+ * 上げる方向、greetは周囲の社会的手がかりを補強する方向(同じく正方向だが控えめ)、declineは対象の輪の
+ * 魅力度を下げ曖昧さ/stressを上げうる方向。ここでの`magnitude`は他要因による減衰前の上限値であり、
+ * 実際の`intensity`は下記の各係数(0〜1程度)を乗算して決まる。
+ */
+const INTENT_BASE: Record<SpeechIntent, { direction: 1 | -1; magnitude: number }> = {
+  invite: { direction: 1, magnitude: 0.6 },
+  welcome: { direction: 1, magnitude: 0.6 },
+  greet: { direction: 1, magnitude: 0.35 },
+  decline: { direction: -1, magnitude: 0.5 },
+};
+
+/** 最終intensityがこの値未満まで弱まった場合、方向の符号によらず"neutral"として丸める */
+const NEUTRAL_INTENSITY_THRESHOLD = 0.05;
+
+/** conformityが高い受け手ほど、場の空気(発言が示す方向)をより強く受け止める */
+function conformityFactor(conformity: number): number {
+  return clamp(0.5 + 0.5 * clamp(conformity, 0, 1), 0, 1);
+}
+
+/**
+ * influenceAvoidanceが高い受け手ほど、発言の効果を弱く受け止める。名指し(target)されるほど
+ * 「自分に矛先が向いた」ことへの抵抗が強く働くため、nearby(周囲向け)より減衰が大きい
+ */
+function influenceAvoidanceFactor(influenceAvoidance: number, relation: SpeechReceptionRelation): number {
+  const weight = relation === "target" ? 0.6 : 0.25;
+  return clamp(1 - clamp(influenceAvoidance, 0, 1) * weight, 0, 1);
+}
+
+/**
+ * 話者への基礎信頼スコア。現在の関係性(同一clique/`existingTieStrength`)から決定的に導出する固定値
+ * (可変の信頼学習は対応しない範囲)。同一cliqueなら既存関係性が強いほど信頼が上がり、そうでなければ
+ * 既存関係性が強い場ほど部外者への基礎信頼が下がる(`engine.ts`の`attractiveness`が使う
+ * outsiderPenaltyと同じ非対称性)。
+ */
+function relationshipTrust(sameClique: boolean, existingTieStrength: number): number {
+  const tie = clamp(existingTieStrength, 0, 1);
+  const trust = sameClique ? 0.5 + 0.5 * tie : 0.5 - 0.4 * tie;
+  return clamp(trust, 0, 1);
+}
+
+/**
+ * 現在のstressが高いほど、正方向の発言(invite/welcome/greet)は素直に受け止めにくくなり、
+ * 負方向の発言(decline)はより強く受け止めてしまう
+ */
+function stressFactor(stress: number, direction: 1 | -1): number {
+  const clampedStress = clamp(stress, 0, 1);
+  return direction > 0 ? clamp(1 - clampedStress * 0.4, 0, 1) : clamp(1 + clampedStress * 0.5, 0, 1.5);
+}
+
+/** 受け手の現在stateによる関連度。既に何らかの決着へ進んでいるほど、発言の効果は薄れる */
+const STATE_RELEVANCE: Record<AgentState, number> = {
+  undecided: 1,
+  forming: 0.7,
+  approaching: 0.6,
+  joined: 0.3,
+  leaving: 0.5,
+  left: 0,
+};
+
+/** 名指し(target)された発言は、周囲向け(nearby)の発言より強く受け止められる */
+function relationFactor(relation: SpeechReceptionRelation): number {
+  return relation === "target" ? 1 : 0.7;
+}
+
+/** `SpeechEvent.strength`をそのまま倍率として使う。異常値(NaN/負値/極端な値)を防ぐためclampする */
+function strengthFactor(strength: number): number {
+  if (!Number.isFinite(strength)) return 1;
+  return clamp(strength, 0, 2);
+}
+
+/**
+ * intentごとに、どの状態次元へ作用するかを固定する(Issue #96の受入条件:
+ * 「invite/welcome/greet/declineごとに、作用対象・方向・基礎強度を明示する」)。
+ * 作用方向はintentの基礎方向(`INTENT_BASE[intent].direction`、`valence`に反映済み)をそのまま使う。
+ * - invite: 周囲のundecidedがその輪に近づく後押し(approachProbability)
+ * - welcome: 対象者が今まさに近づいている輪自体の魅力度(attractiveness。対象は受け手の
+ *   `joinedGroupId`の登録時点スナップショット=`SpeechActiveEffect.targetGroupId`)
+ * - greet: 周囲で合流が起きたのを見て感じる、曖昧な時間へのstress蓄積率の緩和(stress)
+ * - decline: 周囲で離脱が起きたのを見て感じる、帰宅への踏ん切りの伝染(leaveThreshold。
+ *   `agent.leaveThreshold`本体は変更せず、判定に使う実効しきい値のみを補正する)
+ */
+const INTENT_DIMENSION: Record<SpeechIntent, SpeechEffectDimension> = {
+  invite: "approachProbability",
+  welcome: "attractiveness",
+  greet: "stress",
+  decline: "leaveThreshold",
+};
+
+/**
+ * 次元ごとの基礎強度(`intensity === 1`のときの絶対値)と継続tick数。Issue #96の受入条件
+ * 「初期実装の減衰式（線形または指数）を1種類に固定し、tick単位で決定的に計算する」を踏まえ、
+ * 減衰方式は全次元共通で線形固定とする(`SpeechActiveEffect.decay`は常に`"linear"`)。
+ */
+const DIMENSION_UNIT: Record<SpeechEffectDimension, { magnitude: number; durationTicks: number }> = {
+  stress: { magnitude: 0.03, durationTicks: 6 },
+  attractiveness: { magnitude: 0.35, durationTicks: 8 },
+  approachProbability: { magnitude: 0.25, durationTicks: 5 },
+  leaveThreshold: { magnitude: 0.15, durationTicks: 10 },
+};
+
+/**
+ * dimensionごとの符号付き基礎値(`engine.ts`の該当する計算式へそのまま加算する値)を計算する。
+ * `stress`のみ符号を反転させる: positive valence(歓迎ムード)はstress"蓄積率"を下げる方向
+ * (=負の補正)に効くため。他の3次元はvalenceの符号をそのまま使う
+ * (positiveなら後押し/上昇、negativeなら抑制/低下)。
+ */
+function dimensionSignedValue(dimension: SpeechEffectDimension, direction: 1 | -1, intensity: number): number {
+  const magnitude = DIMENSION_UNIT[dimension].magnitude * intensity;
+  const signed = direction * magnitude;
+  return dimension === "stress" ? -signed : signed;
+}
+
+/** 話者自身、およびleft状態のagentは認知対象の候補から除外する(存在しないagentは呼び出し側の配列に含まれ得ない) */
+function isEligibleReceiver(candidate: SpeechReceiverCandidate, speakerId: string): boolean {
+  return candidate.id !== speakerId && candidate.state !== "left";
+}
+
+function buildReception(
+  speech: SpeechEvent,
+  receiver: SpeechReceiverCandidate,
+  relation: SpeechReceptionRelation,
+): SpeechReceptionEvent {
+  const dist = Math.hypot(speech.originX - receiver.x, speech.originY - receiver.y);
+  const heard = dist <= speech.audibility;
+  return {
+    id: `reception-${speech.id}-${receiver.id}`,
+    speechEventId: speech.id,
+    tick: speech.tick,
+    receiverId: receiver.id,
+    relation,
+    distance: dist,
+    threshold: speech.audibility,
+    heard,
+    reason: heard ? "withinRange" : "outOfRange",
+  };
+}
+
+/**
+ * `speechEvents`(このtickまでに生成された発言)から、認知対象になった受け手ごとに
+ * `SpeechReceptionEvent`を導出する純粋関数。`SimulationState`・rngのいずれも参照/変更しない
+ * (`candidates`として渡された位置スナップショットのみを参照する)。
+ *
+ * 到達判定の規則(Issue #94):
+ * - 話者自身、および`state === "left"`のagentは候補から除外する。
+ * - `target`が設定されている場合、対象がこの除外後の候補に含まれていなければ(自己宛て/left/
+ *   不在)`SpeechReceptionEvent`は一切生成しない。含まれていれば、targetは「候補を特定する情報」
+ *   に過ぎず、実際に聞こえたかどうか(`heard`)は`SpeechEvent.originX`/`originY`から対象までの
+ *   距離をしきい値(`audibility`)と比較して別途決定する。
+ * - `audience === "nearby"`の場合、除外後の候補全員について、距離としきい値の比較で`heard`を
+ *   個別に決定した`SpeechReceptionEvent`を生成する(圏外の候補も`heard: false`として記録され、
+ *   `speechLog`側から「なぜ聞こえなかったか」を遡って追跡できる)。
+ *
+ * 発言後にagentが移動しても結果が変わらないのは、`speech.originX`/`originY`が発言生成時点で
+ * 固定されたスナップショットであり、かつ`candidates`もこの関数が呼ばれた時点(=そのtickの処理内)
+ * の位置を渡す一度限りの評価だからである(結果は`SimulationState.speechReceptionLog`に永続化され、
+ * 再計算されることはない)。
+ *
+ * 同一`speechEvents`・同一`candidates`に対して常に同じ順序・内容の配列を返す(`candidates`の
+ * 並び順をそのまま使うため、呼び出し側で安定した順序を渡すこと)。
+ */
+export function deriveSpeechReceptions(
+  speechEvents: SpeechEvent[],
+  candidates: SpeechReceiverCandidate[],
+  config: SpeechEffectsConfig,
+): SpeechReceptionEvent[] {
+  if (!config.enabled) return [];
+
+  const events: SpeechReceptionEvent[] = [];
+  for (const speech of speechEvents) {
+    const eligible = candidates.filter((candidate) => isEligibleReceiver(candidate, speech.speakerId));
+
+    if (speech.target !== undefined) {
+      const target = eligible.find((candidate) => candidate.id === speech.target);
+      if (!target) continue;
+      events.push(buildReception(speech, target, "target"));
+      continue;
+    }
+
+    if (speech.audience === "nearby") {
+      for (const receiver of eligible) {
+        events.push(buildReception(speech, receiver, "audience"));
+      }
+    }
+  }
+  return events;
+}
+
+/**
+ * `receptions`から、受け手別の`SpeechInterpretationEvent`を導出する純粋関数(Issue #95)。
+ * intentごとの基礎的な意味と作用方向(`INTENT_BASE`)を出発点に、受け手の性格
+ * (`conformity`/`influenceAvoidance`)・話者との関係(同一clique/`existingTieStrength`から導出する
+ * 基礎信頼)・現在の`stress`/`state`・target/nearbyの別・`SpeechEvent.strength`を乗算的な係数として
+ * 反映し、決定的に`valence`/`intensity`/`factors`を計算する。`SimulationState`・rngのいずれも
+ * 参照/変更しない。可変の「信頼学習」は導入せず、`existingTieStrength`は呼び出し時点の固定値として使う。
+ *
+ * `heard: false`の受信(圏外で聞こえなかった)は解釈対象にしない(Issue #94: `deriveSpeechReceptions`が
+ * 距離に基づき`heard`を判定するようになったことに伴う、聞いていないものは解釈しないという整合性維持)。
+ * 話者または受け手が`participants`に見つからない場合(防御的、通常は起こらない)も対象にしない。
+ *
+ * すべての中間値・最終値は有限範囲へclampされ、NaN/Infinityが混入しても`strengthFactor`等の
+ * ガードにより出力は常に有限のまま(順序依存も持たない純粋な計算)。
+ */
+export function deriveSpeechInterpretations(
+  receptions: SpeechReceptionEvent[],
+  speechEvents: SpeechEvent[],
+  participants: SpeechInterpreterCandidate[],
+  existingTieStrength: number,
+  config: SpeechEffectsConfig,
+): SpeechInterpretationEvent[] {
+  if (!config.enabled) return [];
+
+  const speechById = new Map(speechEvents.map((speech) => [speech.id, speech]));
+  const participantById = new Map(participants.map((participant) => [participant.id, participant]));
+
+  const events: SpeechInterpretationEvent[] = [];
+  for (const reception of receptions) {
+    if (!reception.heard) continue;
+    const speech = speechById.get(reception.speechEventId);
+    if (!speech) continue;
+    const receiver = participantById.get(reception.receiverId);
+    if (!receiver) continue;
+    const speaker = participantById.get(speech.speakerId);
+
+    const base = INTENT_BASE[speech.intent];
+    const sameClique =
+      speaker !== undefined && receiver.cliqueId !== undefined && receiver.cliqueId === speaker.cliqueId;
+
+    const cFactor = conformityFactor(receiver.conformity);
+    const iFactor = influenceAvoidanceFactor(receiver.influenceAvoidance, reception.relation);
+    const trust = relationshipTrust(sameClique, existingTieStrength);
+    const sFactor = stressFactor(receiver.stress, base.direction);
+    const stateFactor = STATE_RELEVANCE[receiver.state];
+    const relFactor = relationFactor(reception.relation);
+    const strFactor = strengthFactor(speech.strength);
+
+    const rawMagnitude = base.magnitude * cFactor * iFactor * trust * sFactor * stateFactor * relFactor * strFactor;
+    const intensity = clamp(rawMagnitude, 0, 1);
+    const valence: SpeechInterpretationValence =
+      intensity < NEUTRAL_INTENSITY_THRESHOLD ? "neutral" : base.direction > 0 ? "positive" : "negative";
+
+    const factors: SpeechInterpretationFactor[] = [
+      { key: "intentBase", rawValue: base.direction, normalizedValue: base.magnitude, contribution: base.magnitude },
+      { key: "conformity", rawValue: receiver.conformity, normalizedValue: clamp(receiver.conformity, 0, 1), contribution: cFactor },
+      {
+        key: "influenceAvoidance",
+        rawValue: receiver.influenceAvoidance,
+        normalizedValue: clamp(receiver.influenceAvoidance, 0, 1),
+        contribution: iFactor,
+      },
+      {
+        key: "relationshipTrust",
+        rawValue: existingTieStrength,
+        normalizedValue: sameClique ? 1 : 0,
+        contribution: trust,
+      },
+      { key: "receiverStress", rawValue: receiver.stress, normalizedValue: clamp(receiver.stress, 0, 1), contribution: sFactor },
+      { key: "receiverState", rawValue: stateFactor, normalizedValue: stateFactor, contribution: stateFactor },
+      { key: "receptionRelation", rawValue: relFactor, normalizedValue: relFactor, contribution: relFactor },
+      { key: "strength", rawValue: speech.strength, normalizedValue: strFactor, contribution: strFactor },
+    ];
+
+    events.push({
+      id: `interpretation-${reception.id}`,
+      speechEventId: reception.speechEventId,
+      receptionEventId: reception.id,
+      tick: reception.tick,
+      receiverId: reception.receiverId,
+      intent: speech.intent,
+      relation: reception.relation,
+      valence,
+      intensity,
+      factors,
+    });
+  }
+  return events;
+}
+
+/**
+ * `interpretations`から、intentごとに固定の次元(`INTENT_DIMENSION`)と基礎強度(`DIMENSION_UNIT`)で
+ * `SpeechEffectEvent`を導出する純粋関数。生成するのは「どの状態次元へ・どの強度/期間で作用しうるか」
+ * という構造化された記録であり、Agent.stress等へ実際に適用する処理自体はここには存在しない
+ * (それは`deriveSpeechActiveEffects`が生成する`SpeechActiveEffect`を`engine.ts`が参照する形で行う)。
+ * `valence === "neutral"`(ほぼ何も感じなかった)の解釈からは効果を生成しない。
+ * `SimulationState`・rngのいずれも参照/変更しない。
+ */
+export function deriveSpeechEffects(
+  interpretations: SpeechInterpretationEvent[],
+  speechEvents: SpeechEvent[],
+  config: SpeechEffectsConfig,
+): SpeechEffectEvent[] {
+  if (!config.enabled) return [];
+
+  const speechById = new Map(speechEvents.map((speech) => [speech.id, speech]));
+  const events: SpeechEffectEvent[] = [];
+  for (const interpretation of interpretations) {
+    if (interpretation.valence === "neutral") continue;
+    const speech = speechById.get(interpretation.speechEventId);
+    if (!speech) continue;
+
+    const dimension = INTENT_DIMENSION[interpretation.intent];
+    const direction: 1 | -1 = interpretation.valence === "positive" ? 1 : -1;
+    const outputValue = dimensionSignedValue(dimension, direction, interpretation.intensity);
+    const durationTicks = DIMENSION_UNIT[dimension].durationTicks;
+
+    events.push({
+      id: `effect-${interpretation.id}`,
+      speechEventId: interpretation.speechEventId,
+      interpretationEventId: interpretation.id,
+      receiverId: interpretation.receiverId,
+      speakerId: speech.speakerId,
+      intent: speech.intent,
+      reason: speech.reason,
+      occurredTick: interpretation.tick,
+      appliedTick: interpretation.tick,
+      dimension,
+      outputValue,
+      durationTicks,
+    });
+  }
+  return events;
+}
+
+/** 減衰方式。Issue #96時点では線形減衰のみをサポートする(受入条件: 減衰式を1種類に固定する) */
+export type SpeechEffectDecayMethod = "linear";
+
+/**
+ * `SpeechEffectEvent`1件から生成される、実際に`engine.ts`の判断式へ適用されうる持続効果(Issue #96)。
+ * `SpeechEffectEvent`自体は「作用しうる値」の構造化された記録に留まる一方、こちらは`startedAtTick`から
+ * `expiresAtTick`まで、tickが進むごとに線形減衰しながら実際の計算式(attractiveness/接近確率/
+ * stress蓄積率/leave判定のしきい値)へ加算される値そのものを表す。
+ *
+ * `initialStrength`/`currentStrength`はどちらも符号付きの実際の適用値であり、0〜1に正規化された
+ * 強度ではない(dimensionごとに単位が異なるため)。`currentStrength`は`engine.ts`が毎tick、
+ * `startedAtTick`からの経過で線形減衰させた値に更新し直した状態で
+ * `SimulationState.activeSpeechEffects`に保持される。
+ */
+export type SpeechActiveEffect = {
+  id: string;
+  speechEffectEventId: string;
+  /** 生成元の`SpeechEvent.id`。Issue #97: 同一発言による重複適用の検出、集約結果からの遡及に使う */
+  speechEventId: string;
+  /** 発言主体。Issue #97: `registerActiveSpeechEffects`が同一話者・同一intentの再発言を判定するために使う */
+  speakerId: string;
+  intent: SpeechIntent;
+  receiverId: string;
+  dimension: SpeechEffectDimension;
+  /** dimension === "attractiveness"のときのみ設定される、作用対象のGroupCandidate.id(受け手のjoinedGroupIdの登録時点スナップショット) */
+  targetGroupId?: string;
+  startedAtTick: number;
+  expiresAtTick: number;
+  initialStrength: number;
+  currentStrength: number;
+  decay: SpeechEffectDecayMethod;
+};
+
+/**
+ * `effect`が`tick`時点でどれだけの強度を保っているかを、`startedAtTick`からの経過を
+ * `expiresAtTick`までの区間で線形に0まで減衰させて計算する純粋関数。tick単位の決定的な計算のみで、
+ * rngは一切使わない。`tick >= expiresAtTick`では0を返す。
+ */
+export function activeEffectStrengthAtTick(effect: SpeechActiveEffect, tick: number): number {
+  const span = effect.expiresAtTick - effect.startedAtTick;
+  if (span <= 0) return 0;
+  const remaining = clamp(1 - (tick - effect.startedAtTick) / span, 0, 1);
+  // `remaining === 0`のとき`initialStrength * 0`が-0になりうる(initialStrengthが負の場合)ため、
+  // Object.is上の-0/0の違いが呼び出し側の比較・テストで意図せず露出しないよう正規化する。
+  return remaining === 0 ? 0 : effect.initialStrength * remaining;
+}
+
+/**
+ * `effects`(前tickまでに登録済みの持続効果)を`tick`時点の強度へ更新し、期限切れ
+ * (`tick >= expiresAtTick`)のものを破棄した新しい配列を返す純粋関数。`engine.ts`が毎tick、
+ * 状態・行動判断への参照より前に呼び出す(受入条件の「期限切れ効果の破棄」をtick単位で行う)。
+ */
+export function advanceActiveSpeechEffects(effects: SpeechActiveEffect[], tick: number): SpeechActiveEffect[] {
+  const advanced: SpeechActiveEffect[] = [];
+  for (const effect of effects) {
+    if (tick >= effect.expiresAtTick) continue;
+    advanced.push({ ...effect, currentStrength: activeEffectStrengthAtTick(effect, tick) });
+  }
+  return advanced;
+}
+
+/**
+ * Issue #97: `receiverId`・`dimension`(・attractivenessの場合は`targetGroupId`)が一致する
+ * `activeEffects`1件分の寄与(`ActiveEffectContribution`、`tick`時点の減衰後の符号付き値)。
+ * `aggregateActiveEffects`の`positiveContributions`/`negativeContributions`/`duplicateContributions`の要素型。
+ */
+export type ActiveEffectContribution = {
+  speechActiveEffectId: string;
+  speechEffectEventId: string;
+  speechEventId: string;
+  speakerId: string;
+  intent: SpeechIntent;
+  /** `tick`時点の減衰後の符号付き値(dimensionごとの上限clamp前) */
+  value: number;
+};
+
+/**
+ * `aggregateActiveEffects`1回分の集約結果。`value`が実際にengine.tsの計算式へ加算されるべき
+ * 最終値(上限・下限へclamp済み)で、寄与した各`SpeechActiveEffect`(→`speechEffectEventId`→
+ * `speechEventId`)は正負・重複それぞれの内訳として保持される(受入条件:
+ * 「集約後の値と、寄与した各speechEventId・個別寄与を保持する」)。
+ */
+export type AggregatedActiveEffect = {
+  receiverId: string;
+  dimension: SpeechEffectDimension;
+  targetGroupId?: string;
+  tick: number;
+  /** 最終的にengine.tsの計算式へ加算される、dimensionごとの安全範囲へclamp済みの値 */
+  value: number;
+  /** 正方向寄与(上限clamp後)・負方向寄与(下限clamp後)をnetした値。`value`と一致するのが通常だが、
+   * 意図を明示するため`value`とは別に保持する(下記`DIMENSION_EFFECT_LIMIT`参照) */
+  rawNetValue: number;
+  positiveContributions: ActiveEffectContribution[];
+  negativeContributions: ActiveEffectContribution[];
+  /** 同一`speechEventId`から2件目以降の寄与(受入条件「同じ発言の重複適用を禁止」により集約対象外) */
+  duplicateContributions: ActiveEffectContribution[];
+};
+
+/**
+ * `aggregateActiveEffects`/`registerActiveSpeechEffects`が使う安定した処理順序
+ * (受入条件: 「同一tick内の処理順を tick -> speechEventId -> receiverId -> effectDimension 等の
+ * 安定順序へ固定する」)。`startedAtTick`をtickの代わりに使う(`SpeechActiveEffect`自体はtick非依存の
+ * オブジェクトのため、生成されたtick=`startedAtTick`を順序キーとする)。入力配列の並び順に依存せず、
+ * 常に同じ結果になることを保証する(配列反転invariantテストの対象)。
+ */
+function compareActiveEffectOrder(a: SpeechActiveEffect, b: SpeechActiveEffect): number {
+  if (a.startedAtTick !== b.startedAtTick) return a.startedAtTick - b.startedAtTick;
+  if (a.speechEventId !== b.speechEventId) return a.speechEventId < b.speechEventId ? -1 : 1;
+  if (a.receiverId !== b.receiverId) return a.receiverId < b.receiverId ? -1 : 1;
+  if (a.dimension !== b.dimension) return a.dimension < b.dimension ? -1 : 1;
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+}
+
+/**
+ * dimensionごとの安全な最小値・最大値(受入条件: 「次元ごとに安全な最小値・最大値を定義し、stressや
+ * 確率を有効範囲へclampする」)。`DIMENSION_UNIT[dimension].magnitude`(単一の全力発言1件分の基礎強度)の
+ * 3倍を上限とする — 「同方向の発言が3件分までは効果が積み上がるが、そこで頭打ちになる」という
+ * 上限付き加算(受入条件: 「上限付き加算、または逓減合成」のうち上限付き加算を選択)を、正負それぞれの
+ * 方向に独立して適用する。同じ値を最終netValueのclamp範囲としても再利用する(下記`aggregateActiveEffects`
+ * 参照。正負を独立してこの範囲へclampしてからnetするため、結果として最終clampは数学的には冗長だが、
+ * 将来positive/negativeの上限ロジックが変わっても安全範囲が保たれるようにする防御的な二重チェックとして残す)。
+ */
+const DIMENSION_ACCUMULATION_MULTIPLIER = 3;
+const DIMENSION_EFFECT_LIMIT: Record<SpeechEffectDimension, number> = {
+  stress: DIMENSION_UNIT.stress.magnitude * DIMENSION_ACCUMULATION_MULTIPLIER,
+  attractiveness: DIMENSION_UNIT.attractiveness.magnitude * DIMENSION_ACCUMULATION_MULTIPLIER,
+  approachProbability: DIMENSION_UNIT.approachProbability.magnitude * DIMENSION_ACCUMULATION_MULTIPLIER,
+  leaveThreshold: DIMENSION_UNIT.leaveThreshold.magnitude * DIMENSION_ACCUMULATION_MULTIPLIER,
+};
+
+function sumContributionValues(contributions: ActiveEffectContribution[]): number {
+  return contributions.reduce((total, contribution) => total + contribution.value, 0);
+}
+
+/**
+ * Issue #97: `receiverId`・`dimension`(・attractivenessの場合は`targetGroupId`)が一致する
+ * `activeEffects`を、入力配列の並び順に依存しない決定的な規則で1つの値へ集約する純粋関数。
+ *
+ * 規則(受入条件に対応):
+ * 1. `compareActiveEffectOrder`で安定した順序に並べ替えてから処理する(配列順反転で結果が変わらない)。
+ * 2. 同一`speechEventId`が複数の一致effectを生成していた場合、順序上最初の1件のみを寄与として数え、
+ *    以降は`duplicateContributions`へ回す(同じ発言の重複適用の禁止)。
+ * 3. 正方向の寄与(`value > 0`)と負方向の寄与(`value < 0`)に分け、それぞれを合計してから
+ *    `DIMENSION_EFFECT_LIMIT[dimension]`で独立にclampする(同方向効果の上限付き加算)。
+ * 4. 正負2つのclamp済み合計をnet化する(反対方向効果の競合規則: 正負をnet化する。両方の寄与元は
+ *    `positiveContributions`/`negativeContributions`にそのまま残るため、因果追跡は失われない)。
+ * 5. 最後にもう一度`DIMENSION_EFFECT_LIMIT[dimension]`へclampして`value`とする(dimensionの安全範囲)。
+ *
+ * target/nearby(audience)の優先度・明示対象への重みは、この集約より前の段階
+ * (`deriveSpeechInterpretations`の`relationFactor`: target=1.0, audience(nearby)=0.7)で
+ * 固定済みであり、ここでは追加の重み付けを行わない(二重適用を避けるため)。
+ */
+export function aggregateActiveEffects(
+  activeEffects: SpeechActiveEffect[],
+  receiverId: string,
+  dimension: SpeechEffectDimension,
+  tick: number,
+  targetGroupId?: string,
+): AggregatedActiveEffect {
+  const matching = activeEffects.filter((effect) => {
+    if (effect.receiverId !== receiverId || effect.dimension !== dimension) return false;
+    if (dimension === "attractiveness" && effect.targetGroupId !== targetGroupId) return false;
+    return true;
+  });
+  const ordered = [...matching].sort(compareActiveEffectOrder);
+
+  const seenSpeechEventIds = new Set<string>();
+  const positiveContributions: ActiveEffectContribution[] = [];
+  const negativeContributions: ActiveEffectContribution[] = [];
+  const duplicateContributions: ActiveEffectContribution[] = [];
+
+  for (const effect of ordered) {
+    const contribution: ActiveEffectContribution = {
+      speechActiveEffectId: effect.id,
+      speechEffectEventId: effect.speechEffectEventId,
+      speechEventId: effect.speechEventId,
+      speakerId: effect.speakerId,
+      intent: effect.intent,
+      value: activeEffectStrengthAtTick(effect, tick),
+    };
+    if (seenSpeechEventIds.has(effect.speechEventId)) {
+      duplicateContributions.push(contribution);
+      continue;
+    }
+    seenSpeechEventIds.add(effect.speechEventId);
+    if (contribution.value > 0) positiveContributions.push(contribution);
+    else if (contribution.value < 0) negativeContributions.push(contribution);
+  }
+
+  const limit = DIMENSION_EFFECT_LIMIT[dimension];
+  const positiveSum = clamp(sumContributionValues(positiveContributions), 0, limit);
+  const negativeSum = clamp(sumContributionValues(negativeContributions), -limit, 0);
+  const rawNetValue = positiveSum + negativeSum;
+  const value = clamp(rawNetValue, -limit, limit);
+
+  return {
+    receiverId,
+    dimension,
+    targetGroupId,
+    tick,
+    value,
+    rawNetValue,
+    positiveContributions,
+    negativeContributions,
+    duplicateContributions,
+  };
+}
+
+/**
+ * `receiverId`・`dimension`(・attractivenessの場合は`targetGroupId`)が一致する`activeEffects`の
+ * `tick`時点の集約値(`aggregateActiveEffects(...).value`)を返す。`engine.ts`の4箇所の呼び出し元
+ * (`attractiveness()`・接近確率・stress蓄積率・leave判定の実効しきい値)はこの関数を通して
+ * Issue #97の集約規則(上限付き加算・正負net化・重複排除・安全範囲clamp)を透過的に受け取る。
+ */
+export function sumActiveEffectValue(
+  activeEffects: SpeechActiveEffect[],
+  receiverId: string,
+  dimension: SpeechEffectDimension,
+  tick: number,
+  targetGroupId?: string,
+): number {
+  return aggregateActiveEffects(activeEffects, receiverId, dimension, tick, targetGroupId).value;
+}
+
+/**
+ * `effects`(このtickで新たに登録された`SpeechEffectEvent`)から、1件につき1件の`SpeechActiveEffect`を
+ * 導出する純粋関数(受入条件: 「1件の解釈結果から`SpeechEffectEvent`とactive effectを生成する」)。
+ * `dimension === "attractiveness"`の場合のみ、`participants`から受け手の`joinedGroupId`
+ * (登録時点のスナップショット)を`targetGroupId`として引き継ぐ。
+ * `SimulationState`・rngのいずれも参照/変更しない。
+ */
+export function deriveSpeechActiveEffects(
+  effects: SpeechEffectEvent[],
+  participants: SpeechInterpreterCandidate[],
+  config: SpeechEffectsConfig,
+): SpeechActiveEffect[] {
+  if (!config.enabled) return [];
+
+  const participantById = new Map(participants.map((participant) => [participant.id, participant]));
+  const active: SpeechActiveEffect[] = [];
+  for (const effect of effects) {
+    const receiver = participantById.get(effect.receiverId);
+    const targetGroupId = effect.dimension === "attractiveness" ? receiver?.joinedGroupId : undefined;
+    active.push({
+      id: `active-${effect.id}`,
+      speechEffectEventId: effect.id,
+      speechEventId: effect.speechEventId,
+      speakerId: effect.speakerId,
+      intent: effect.intent,
+      receiverId: effect.receiverId,
+      dimension: effect.dimension,
+      targetGroupId,
+      startedAtTick: effect.appliedTick,
+      expiresAtTick: effect.appliedTick + effect.durationTicks,
+      initialStrength: effect.outputValue,
+      currentStrength: effect.outputValue,
+      decay: "linear",
+    });
+  }
+  return active;
+}
+
+/** `registerActiveSpeechEffects`が「同一の再発言」とみなす一致条件(受入条件: 再発言の置換/更新/cooldownの明示) */
+function isSameReplacementGroup(a: SpeechActiveEffect, b: SpeechActiveEffect): boolean {
+  return (
+    a.receiverId === b.receiverId &&
+    a.dimension === b.dimension &&
+    a.speakerId === b.speakerId &&
+    a.intent === b.intent &&
+    (a.dimension !== "attractiveness" || a.targetGroupId === b.targetGroupId)
+  );
+}
+
+/**
+ * Issue #97: 前tickまでに登録済みの`existing`(`advanceActiveSpeechEffects`で減衰・期限切れ破棄済み)と、
+ * このtickで新たに生成された`incoming`(`deriveSpeechActiveEffects`の出力)を、次tickへ引き継ぐ
+ * `SimulationState.activeSpeechEffects`へ合成する純粋関数。単純な配列結合ではなく、
+ * 「同一話者・同一intentの再発言」を**置換(更新/refresh)**として扱う(受入条件が求める
+ * 置換/更新/cooldownのいずれかの明示的選択): `incoming`の各効果について、`existing`(および
+ * `incoming`内でこれより先に処理された効果)の中に`isSameReplacementGroup`が真になるものがあれば、
+ * それを取り除いてから新しい効果を追加する。これにより、同じ話者が同じintentの発言を繰り返しても
+ * 効果が際限なく積み上がらず、常に最新の発言の強度・持続期間で上書きされる
+ * (`aggregateActiveEffects`の上限付き加算は、話者/intentが異なる複数発言が同時に効いている場合の
+ * 積み上がりに対する規則であり、この置換規則とは独立に働く)。
+ *
+ * `incoming`は`compareActiveEffectOrder`(tick -> speechEventId -> receiverId -> dimension)で
+ * 安定した順序に並べ替えてから処理するため、`incoming`の入力配列順序を反転しても結果は変わらない。
+ */
+export function registerActiveSpeechEffects(
+  existing: SpeechActiveEffect[],
+  incoming: SpeechActiveEffect[],
+): SpeechActiveEffect[] {
+  const orderedIncoming = [...incoming].sort(compareActiveEffectOrder);
+  let result = existing;
+  for (const next of orderedIncoming) {
+    result = result.filter((effect) => !isSameReplacementGroup(effect, next));
+    result = [...result, next];
+  }
+  return result;
+}

@@ -1,0 +1,1089 @@
+.app-root {
+  /* iPhone Safariのアドレスバー表示/非表示で高さが変わっても破綻しないよう、
+     dvh対応ブラウザではdynamic viewport heightを使う(非対応環境はvhにフォールバック) */
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  flex-shrink: 0;
+  padding: 20px 24px 12px;
+  border-bottom: 1px solid #2e303a;
+}
+
+.app-header h1 {
+  font-size: 22px;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.app-header p {
+  color: #9ca3af;
+  max-width: 900px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.tick-status {
+  margin-top: 8px;
+  font-size: 12.5px;
+  color: #6b7280;
+}
+
+.current-condition {
+  margin-top: 2px;
+  font-size: 12px;
+  color: #8b93a5;
+}
+
+/* モバイル時のみレンダリングされる折りたたみ(ヘッダー説明文・詳細パラメータ) */
+.app-intro-details summary,
+.sliders-details summary {
+  cursor: pointer;
+  font-size: 12.5px;
+  color: #9ca3af;
+  padding: 6px 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app-intro-details[open] summary,
+.sliders-details[open] summary {
+  margin-bottom: 4px;
+}
+
+.app-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 300px 1fr 300px;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 16px;
+  padding: 16px 24px 24px;
+  align-items: stretch;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.panel {
+  background: #171922;
+  border: 1px solid #2e303a;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.panel h2 {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+  margin-bottom: 10px;
+}
+
+.sidebar-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.control-buttons {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.control-buttons button {
+  flex: 1;
+  padding: 8px 0;
+  border-radius: 6px;
+  border: 1px solid #3f4250;
+  background: #232634;
+  color: #e5e7eb;
+  cursor: pointer;
+}
+
+.control-buttons button:hover:not(:disabled) {
+  background: #2b2f40;
+}
+
+.control-buttons button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  color: #cbd5e1;
+  margin-bottom: 10px;
+}
+
+.field input[type="number"],
+.field select {
+  background: #0f1115;
+  border: 1px solid #3f4250;
+  color: #e5e7eb;
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+}
+
+.preset-description {
+  font-size: 12px;
+  color: #8b93a5;
+  margin: -4px 0 12px;
+  line-height: 1.5;
+}
+
+.sliders {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.slider-field span {
+  font-size: 11.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.slider-field input[type="range"] {
+  width: 100%;
+}
+
+.apply-mode-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.apply-mode-badge--immediate {
+  background: #14532d;
+  color: #86efac;
+}
+
+.apply-mode-badge--resetRequired {
+  background: #7c2d12;
+  color: #fdba74;
+}
+
+.reset-required-banner {
+  font-size: 12px;
+  color: #fdba74;
+  background: #3f2410;
+  border: 1px solid #7c2d12;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin: -4px 0 12px;
+}
+
+.legend ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12.5px;
+}
+
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.legend-note {
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: #8b93a5;
+  line-height: 1.5;
+}
+
+.expression-display-settings {
+  flex-shrink: 0;
+}
+
+.expression-display-note {
+  font-size: 11.5px;
+  color: #8b93a5;
+  margin: -4px 0 10px;
+  line-height: 1.5;
+}
+
+.expression-display-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.speech-bubble-display-settings {
+  flex-shrink: 0;
+}
+
+.speech-bubble-display-note {
+  font-size: 11.5px;
+  color: #8b93a5;
+  margin: -4px 0 10px;
+  line-height: 1.5;
+}
+
+.speech-bubble-display-toggle {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.intervention-selector {
+  flex-shrink: 0;
+  border-color: #3f2f1a;
+}
+
+.intervention-description {
+  margin-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.intervention-description-text {
+  font-size: 12px;
+  color: #8b93a5;
+  line-height: 1.5;
+}
+
+.intervention-description-row {
+  font-size: 12px;
+  color: #cbd5e1;
+  line-height: 1.5;
+}
+
+.intervention-description-label {
+  display: block;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #fdba74;
+  margin-bottom: 1px;
+}
+
+.monte-carlo-panel {
+  flex-shrink: 0;
+}
+
+.monte-carlo-panel button {
+  width: 100%;
+  padding: 8px 0;
+  border-radius: 6px;
+  border: 1px solid #3f4250;
+  background: #232634;
+  color: #e5e7eb;
+  cursor: pointer;
+  font-size: 12.5px;
+  margin-bottom: 10px;
+}
+
+.monte-carlo-panel button:hover:not(:disabled) {
+  background: #2b2f40;
+}
+
+.monte-carlo-panel button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.monte-carlo-error {
+  font-size: 12px;
+  color: #fdba74;
+  margin: -4px 0 10px;
+}
+
+.monte-carlo-note {
+  font-size: 12px;
+  color: #8b93a5;
+  margin: -4px 0 10px;
+  line-height: 1.5;
+}
+
+.monte-carlo-empty {
+  font-size: 12.5px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.monte-carlo-condition {
+  font-size: 12px;
+  color: #8b93a5;
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.monte-carlo-stale {
+  font-size: 12px;
+  color: #fdba74;
+  background: #3f2410;
+  border: 1px solid #7c2d12;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 10px;
+}
+
+.monte-carlo-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.monte-carlo-summary-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  color: #cbd5e1;
+}
+
+.monte-carlo-summary-row span:first-child {
+  color: #8b93a5;
+}
+
+.monte-carlo-runs h3 {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8b93a5;
+  margin-bottom: 6px;
+}
+
+.monte-carlo-runs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.monte-carlo-run-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 6px;
+  font-size: 11px;
+  color: #cbd5e1;
+  border-bottom: 1px solid #232634;
+  padding-bottom: 4px;
+}
+
+.intervention-comparison-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.intervention-comparison-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.intervention-comparison-row span:first-child {
+  color: #8b93a5;
+}
+
+.intervention-comparison-header {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8b93a5;
+  border-bottom: 1px solid #232634;
+  padding-bottom: 4px;
+  margin-bottom: 2px;
+}
+
+.intervention-comparison-header span:first-child {
+  color: #8b93a5;
+}
+
+.speech-effects-phase3-summary {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid #232634;
+}
+
+.speech-effects-phase3-summary h3 {
+  margin: 0 0 6px;
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.center-stage {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.canvas-panel {
+  padding: 8px;
+}
+
+.canvas-bg {
+  fill: #0b0d12;
+}
+
+.candidate-ring {
+  fill: rgba(59, 130, 246, 0.06);
+  stroke: rgba(59, 130, 246, 0.45);
+  stroke-dasharray: 4 3;
+}
+
+.candidate-ring.confirmed {
+  fill: rgba(34, 197, 94, 0.08);
+  stroke: rgba(34, 197, 94, 0.6);
+  stroke-dasharray: none;
+}
+
+.candidate-ring.dissolving {
+  fill: rgba(156, 163, 175, 0.05);
+  stroke: rgba(156, 163, 175, 0.5);
+  stroke-dasharray: 2 4;
+}
+
+.candidate-ring.expired {
+  fill: rgba(239, 68, 68, 0.05);
+  stroke: rgba(239, 68, 68, 0.45);
+  stroke-dasharray: 2 4;
+}
+
+.candidate-label {
+  fill: #9ca3af;
+  font-size: 11px;
+  text-anchor: middle;
+}
+
+.agent-dot {
+  stroke: #0f1115;
+  stroke-width: 1.5;
+}
+
+.agent-dot.observer {
+  stroke: #f97316;
+  stroke-width: 3;
+}
+
+.agent-label {
+  fill: #cbd5e1;
+  font-size: 10px;
+  text-anchor: middle;
+}
+
+/* 心の声吹き出し。他エージェント/本人には認知されない観察者向けの演出のため、
+   実線の発言吹き出し(未実装)とは点線枠+しっぽの丸+括弧付き表示の3点で視覚的に区別する。
+   クリック等の操作を持たないため pointer-events は無効化する */
+.thought-bubble {
+  pointer-events: none;
+}
+
+.thought-bubble-box {
+  fill: rgba(241, 245, 249, 0.95);
+  stroke: #64748b;
+  stroke-width: 1.2;
+  stroke-dasharray: 3 2;
+}
+
+.thought-bubble.observer .thought-bubble-box {
+  stroke: #f97316;
+}
+
+.thought-bubble-trail {
+  fill: rgba(241, 245, 249, 0.9);
+  stroke: #64748b;
+  stroke-width: 1;
+  stroke-dasharray: 2 1;
+}
+
+.thought-bubble.observer .thought-bubble-trail {
+  stroke: #f97316;
+}
+
+.thought-bubble-text {
+  fill: #0f172a;
+  font-size: 10px;
+  text-anchor: middle;
+}
+
+/* 発言吹き出し。他エージェントに認知される実際の発言のため、心の声(点線枠+丸のしっぽ+
+   括弧付き表示)とは実線枠+三角形の矢羽根しっぽ+💬アイコン付き文言の3点で視覚的に区別する
+   (色だけに依存しない判別。Issue #82)。クリック等の操作を持たないため pointer-events は無効化する */
+.speech-bubble {
+  pointer-events: none;
+}
+
+.speech-bubble-box {
+  fill: rgba(254, 249, 231, 0.97);
+  stroke: #b45309;
+  stroke-width: 1.6;
+}
+
+.speech-bubble.observer .speech-bubble-box {
+  stroke: #f97316;
+}
+
+.speech-bubble-tail {
+  fill: rgba(254, 249, 231, 0.97);
+  stroke: #b45309;
+  stroke-width: 1.6;
+}
+
+.speech-bubble.observer .speech-bubble-tail {
+  stroke: #f97316;
+}
+
+.speech-bubble-text {
+  fill: #422006;
+  font-size: 10px;
+  text-anchor: middle;
+}
+
+.sidebar-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.observer-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  max-height: 35%;
+  overflow-y: auto;
+}
+
+.simulation-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex-shrink: 0;
+  max-height: 35%;
+  overflow-y: auto;
+}
+
+.simulation-summary-provisional {
+  color: #fbbf24;
+  font-size: 12px;
+  margin-bottom: 2px;
+}
+
+.simulation-summary-section + .simulation-summary-section {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #2e303a;
+}
+
+.simulation-summary-section h3 {
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #8b93a5;
+  margin-bottom: 6px;
+}
+
+.simulation-summary-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12.5px;
+  color: #cbd5e1;
+}
+
+.simulation-summary-row span:first-child {
+  color: #8b93a5;
+}
+
+.simulation-summary-empty {
+  color: #6b7280;
+  font-size: 12.5px;
+}
+
+.simulation-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  border: 1px solid #2e303a;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.simulation-summary-card + .simulation-summary-card {
+  margin-top: 8px;
+}
+
+.simulation-summary-row--header {
+  margin-bottom: 2px;
+}
+
+.simulation-summary-label-name {
+  font-weight: 600;
+  color: #e5e7eb !important;
+}
+
+.simulation-summary-state {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #232634;
+  color: #e5e7eb !important;
+}
+
+.observer-inspector-empty {
+  color: #6b7280;
+  font-size: 12.5px;
+}
+
+.observer-inspector-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12.5px;
+  border: 1px solid #2e303a;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.observer-inspector-card--warning {
+  border-color: #7c2d12;
+  background: #2a1608;
+}
+
+.observer-inspector-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: #cbd5e1;
+}
+
+.observer-inspector-row span:first-child {
+  color: #8b93a5;
+}
+
+.observer-inspector-row--header {
+  margin-bottom: 2px;
+}
+
+.observer-inspector-label-name {
+  font-weight: 600;
+  color: #e5e7eb !important;
+}
+
+.observer-inspector-state {
+  font-size: 11px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #232634;
+  color: #e5e7eb !important;
+}
+
+.observer-inspector-row--warning span {
+  color: #fdba74 !important;
+}
+
+.observer-inspector-divider {
+  border-top: 1px solid #2e303a;
+  margin: 4px 0;
+}
+
+.observer-inspector-speech-empty {
+  color: #6b7280;
+  font-size: 11.5px;
+}
+
+.observer-inspector-speech-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: ui-monospace, Consolas, monospace;
+}
+
+.observer-inspector-speech-entry {
+  border-left: 2px solid #7dd3fc;
+  padding-left: 6px;
+}
+
+.observer-inspector-speech-message {
+  font-size: 11.5px;
+  color: #d1d5db;
+}
+
+.observer-inspector-speech-relation {
+  font-size: 10.5px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: #232634;
+  color: #93c5fd !important;
+  margin-right: 6px;
+}
+
+.observer-inspector-speech-meta {
+  color: #6b7280;
+  font-size: 10px;
+  margin-top: 1px;
+}
+
+/* Phase 3の因果詳細(認知/解釈/効果)。折りたたみ式のnative <details>で、色だけに頼らず
+   summaryのテキストと矢印マーカーで開閉状態を示す(アクセシビリティ配慮)。 */
+.observer-inspector-effect-details {
+  margin-top: 4px;
+  font-size: 11px;
+  color: #d1d5db;
+}
+
+.observer-inspector-effect-details summary {
+  cursor: pointer;
+  color: #93c5fd;
+}
+
+.observer-inspector-effect-line {
+  margin-top: 3px;
+}
+
+.observer-inspector-effect-reason {
+  margin-top: 3px;
+  color: #fdba74;
+}
+
+.observer-inspector-effect-empty {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.observer-inspector-factor-list {
+  margin: 3px 0 0;
+  padding-left: 16px;
+  color: #9ca3af;
+}
+
+.event-log {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 160px;
+  overflow: hidden;
+}
+
+.event-log-filters {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.event-log-filter-label {
+  font-size: 11.5px;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.event-log-filter-select {
+  flex: 1;
+  min-width: 0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #3f4250;
+  background: #232634;
+  color: #cbd5e1;
+  font-size: 11.5px;
+  cursor: pointer;
+}
+
+.event-log-filter-select:hover {
+  background: #2b2f40;
+}
+
+.event-log-filter-select:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 1px;
+}
+
+.event-log-list {
+  flex: 1;
+  min-height: 80px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  font-family: ui-monospace, Consolas, monospace;
+  color: #d1d5db;
+}
+
+.event-log-entry {
+  border-bottom: 1px solid #232634;
+  padding-bottom: 4px;
+}
+
+/* 発言ログは通常の状態ログと視覚的に区別する(左に色付きボーダー+専用の補足行) */
+.event-log-entry--speech {
+  border-left: 2px solid #7dd3fc;
+  padding-left: 6px;
+}
+
+.event-log-entry-meta {
+  color: #6b7280;
+  font-size: 10.5px;
+  margin-top: 2px;
+}
+
+.event-log-empty {
+  color: #6b7280;
+}
+
+/* Phase 3の解釈/効果ログは発言ログと同じ左ボーダー系だが、色相を変えて視覚的に区別する
+   (色だけに依存しないよう、行頭の絵文字とmeta見出しのテキストでも区別できるようにしている)。 */
+.event-log-entry--speech-effect {
+  border-left: 2px solid #c4b5fd;
+  padding-left: 6px;
+}
+
+.event-log-entry-meta-details {
+  margin-top: 2px;
+}
+
+.event-log-entry-meta-details summary {
+  cursor: pointer;
+  color: #9ca3af;
+  font-size: 10.5px;
+}
+
+.event-log-truncation-notice {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 0 0 6px;
+}
+
+.event-log-show-all-button {
+  margin-left: 6px;
+  padding: 2px 8px;
+  border-radius: 6px;
+  border: 1px solid #3f4250;
+  background: #232634;
+  color: #cbd5e1;
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.event-log-show-all-button:hover {
+  background: #2b2f40;
+}
+
+/*
+ * このメディアクエリは、上記の各セレクタ(.sidebar-right, .observer-inspector,
+ * .simulation-summary, .event-log, .event-log-list)に対するnarrow/mobile幅用の
+ * 上書きなので、対応するデフォルト(デスクトップ)側のルールより後ろに置く必要がある。
+ * 同一詳細度のルールはCSS上でファイル内の記述順(後着優先)で競合が解決されるため、
+ * これより前に置くとデスクトップ側のルールに常に負けて無効化されてしまう
+ * (Phase Cでこのブロックがファイル前方に残っていたことが原因で、narrow幅時の
+ * オーバーライドが機能しなくなっていた)。
+ */
+@media (max-width: 1100px) {
+  .app-root {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+
+  .app-main {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+    min-height: 0;
+    overflow: visible;
+  }
+
+  .sidebar-left,
+  .center-stage,
+  .sidebar-right {
+    overflow: visible;
+  }
+
+  .observer-inspector,
+  .simulation-summary {
+    flex-shrink: 0;
+    max-height: none;
+    overflow-y: visible;
+  }
+
+  .event-log {
+    flex: none;
+  }
+
+  .event-log-list {
+    flex: none;
+    max-height: 50vh;
+  }
+}
+
+/*
+ * iPhoneなどスマホ幅向けレイアウト (#54)。
+ * 上の1100px用ブロックと同様に、デフォルト側ルールへの上書きなので必ずファイル末尾側に置くこと。
+ * 768px以下では1100px用ブロックも同時に適用され、競合時はこちら(後着)が勝つ。
+ *
+ * 3カラムのラッパー(.sidebar-left / .center-stage / .sidebar-right)を display: contents で
+ * レイアウト上消し、各パネルを .app-main 直下のflexアイテムとして order で並べ替える。
+ * JSXのDOM順(PC向け3カラム)は変えずに、スマホでは
+ * 「Canvas → 基本操作 → 心の声表示設定 → 凡例 → 観察系パネル → 分析系パネル」の優先順位にする。
+ */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 12px 16px 10px;
+  }
+
+  .app-header h1 {
+    font-size: 17px;
+    margin-bottom: 2px;
+  }
+
+  .tick-status {
+    margin-top: 4px;
+  }
+
+  .app-main {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px 12px 32px;
+  }
+
+  .sidebar-left,
+  .center-stage,
+  .sidebar-right {
+    display: contents;
+  }
+
+  .canvas-panel {
+    order: 1;
+  }
+
+  .control-panel {
+    order: 2;
+  }
+
+  .expression-display-settings {
+    order: 3;
+  }
+
+  .speech-bubble-display-settings {
+    order: 4;
+  }
+
+  .intervention-selector {
+    order: 5;
+  }
+
+  .legend {
+    order: 6;
+  }
+
+  .observer-inspector {
+    order: 7;
+  }
+
+  .simulation-summary {
+    order: 8;
+  }
+
+  .event-log {
+    order: 9;
+  }
+
+  /* .monte-carlo-panel は介入比較パネルにも付いているため、
+     後着の .intervention-comparison-panel 指定で介入比較だけ最後に回す */
+  .monte-carlo-panel {
+    order: 10;
+  }
+
+  .intervention-comparison-panel {
+    order: 11;
+  }
+
+  /* 同様に、発言効果ON/OFF比較パネルも .monte-carlo-panel を共有しているため最後尾へ回す */
+  .speech-effects-comparison-panel {
+    order: 12;
+  }
+
+  /* viewBoxによる縮小表示は活かしつつ、スマホで縦に大きすぎないよう制限する。
+     preserveAspectRatioのデフォルト(meet)により、縦横比は崩れない */
+  .canvas-panel svg {
+    height: auto;
+    max-height: 60vh;
+    max-height: 60dvh;
+  }
+
+  /* タッチ操作性: ボタンとフォーム部品を指で押しやすいサイズにする */
+  .control-buttons button {
+    padding: 12px 0;
+    font-size: 14px;
+  }
+
+  .field input[type="number"],
+  .field select,
+  .event-log-filter-select {
+    /* 16px未満だとiOS Safariがフォーカス時に自動ズームする */
+    font-size: 16px;
+    padding: 10px;
+  }
+
+  .slider-field input[type="range"] {
+    height: 32px;
+  }
+
+  .expression-display-toggle input[type="checkbox"],
+  .speech-bubble-display-toggle input[type="checkbox"] {
+    width: 20px;
+    height: 20px;
+  }
+
+  .monte-carlo-panel button {
+    padding: 12px 0;
+    font-size: 14px;
+  }
+
+  /* 詳細パラメータは<details>内に折りたたまれるため、内側スクロールをやめて
+     ページスクロールに任せる */
+  .sliders {
+    max-height: none;
+    overflow-y: visible;
+    padding-right: 0;
+  }
+
+  /* ログが伸びても画面全体の操作性を壊さないよう、リスト側だけを内側スクロールにする */
+  .event-log-list {
+    max-height: 40vh;
+    max-height: 40dvh;
+  }
+}
