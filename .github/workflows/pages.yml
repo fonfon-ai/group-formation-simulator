@@ -10,7 +10,6 @@ permissions:
   pages: write
   id-token: write
 
-# 同時に複数のデプロイが走らないようにする(進行中のデプロイは中断しない)
 concurrency:
   group: pages
   cancel-in-progress: false
