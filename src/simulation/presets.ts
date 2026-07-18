@@ -23,9 +23,9 @@ export type ScenarioPreset = {
 export const PRESETS: ScenarioPreset[] = [
   {
     id: "natural",
-    name: "1. 自然に二次会が成立する場",
+    name: "1. A next round forms naturally",
     description:
-      "主導者がいて、二次会意欲の高い人も複数いる。observerJoinerも参加しやすい標準的なケース。",
+      "There's a leader and several people keen on a next round. A standard case where the observerJoiner can join easily too.",
     params: {
       ...DEFAULT_PARAMS,
       numLeaders: 2,
@@ -36,9 +36,9 @@ export const PRESETS: ScenarioPreset[] = [
   },
   {
     id: "ambiguous-dissolve",
-    name: "2. 曖昧なまま解散する場",
+    name: "2. Everyone drifts apart in ambiguity",
     description:
-      "主導者がおらず、皆が様子見のまま時間切れになる。observerJoinerは帰宅しやすい。",
+      "No leader; everyone waits and watches until time runs out. The observerJoiner tends to head home.",
     params: {
       ...DEFAULT_PARAMS,
       numLeaders: 0,
@@ -50,9 +50,9 @@ export const PRESETS: ScenarioPreset[] = [
   },
   {
     id: "strong-leader",
-    name: "3. 強い主導者が場を作る場",
+    name: "3. A strong leader drives the group",
     description:
-      "一人の強い主導者が早期に核を作り、多くの人がそこに引き寄せられる。",
+      "A single strong leader forms a core early, and many people are drawn to it.",
     params: {
       ...DEFAULT_PARAMS,
       numLeaders: 1,
@@ -63,9 +63,9 @@ export const PRESETS: ScenarioPreset[] = [
   },
   {
     id: "late-join-culture",
-    name: "4. 後乗りしやすい文化",
+    name: "4. A late-join-friendly culture",
     description:
-      "すでに形成されたグループへの参加コストが低い。observerJoinerが参加しやすい。",
+      "The cost of joining an already-formed group is low. The observerJoiner joins easily.",
     params: {
       ...DEFAULT_PARAMS,
       numLeaders: 1,
@@ -76,9 +76,9 @@ export const PRESETS: ScenarioPreset[] = [
   },
   {
     id: "leftover-free-grouping",
-    name: "5. 自由グループ作りで余りやすい場",
+    name: "5. Free-form grouping leaves people out",
     description:
-      "全体をまとめる主導者はおらず、既存の仲良しグループだけが自然に固まっていく。既存の関係性が強く、後から混ざる余地が少ない。observerJoinerが孤立しやすい。",
+      "There's no leader to bring everyone together; only pre-existing friend groups naturally coalesce. Ties are strong and there's little room to mix in later. The observerJoiner tends to end up isolated.",
     params: {
       ...DEFAULT_PARAMS,
       numLeaders: 0,

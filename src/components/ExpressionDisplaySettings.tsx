@@ -6,15 +6,15 @@ type Props = {
 };
 
 const TARGET_OPTIONS: Array<{ value: ExpressionDisplayTarget; label: string }> = [
-  { value: "all", label: "全エージェント" },
-  { value: "observerJoiner", label: "observerJoinerのみ" },
-  { value: "important", label: "重要イベントのみ" },
+  { value: "all", label: "All agents" },
+  { value: "observerJoiner", label: "observerJoiner only" },
+  { value: "important", label: "Important events only" },
 ];
 
 const DENSITY_OPTIONS: Array<{ value: ExpressionDisplayDensity; label: string }> = [
-  { value: "few", label: "少なめ" },
-  { value: "standard", label: "標準" },
-  { value: "many", label: "多め" },
+  { value: "few", label: "Fewer" },
+  { value: "standard", label: "Standard" },
+  { value: "many", label: "More" },
 ];
 
 /**
@@ -26,10 +26,10 @@ const DENSITY_OPTIONS: Array<{ value: ExpressionDisplayDensity; label: string }>
 export function ExpressionDisplaySettings({ settings, onSettingsChange }: Props) {
   return (
     <div className="panel expression-display-settings">
-      <h2>心の声表示</h2>
+      <h2>Inner voice</h2>
       <p className="expression-display-note">
-        「心の声」は観察者にだけ見える非介入の表現で、エージェント本人の発言ではありません。
-        この表示設定を変えてもシミュレーションの結果は変わりません。
+        The "inner voice" is a non-intervening expression visible only to the observer, not something the agent actually says.
+        Changing this display setting does not change the simulation result.
       </p>
 
       <label className="field expression-display-toggle">
@@ -38,13 +38,13 @@ export function ExpressionDisplaySettings({ settings, onSettingsChange }: Props)
           checked={settings.enabled}
           onChange={(e) => onSettingsChange({ ...settings, enabled: e.target.checked })}
         />
-        <span>心の声を表示する</span>
+        <span>Show inner voice</span>
       </label>
 
       {settings.enabled && (
         <>
           <label className="field">
-            <span>表示対象</span>
+            <span>Show for</span>
             <select
               value={settings.target}
               onChange={(e) =>
@@ -60,7 +60,7 @@ export function ExpressionDisplaySettings({ settings, onSettingsChange }: Props)
           </label>
 
           <label className="field">
-            <span>表示密度</span>
+            <span>Density</span>
             <select
               value={settings.density}
               onChange={(e) =>

@@ -42,8 +42,8 @@ describe("SimulationSummaryPanel", () => {
   it("renders without throwing when the simulation has not finished and nothing has happened yet", () => {
     const state = makeState({ agents: [makeAgent({ id: "a" })] });
     const html = renderToStaticMarkup(createElement(SimulationSummaryPanel, { state }));
-    expect(html).toContain("現在時点の暫定集計");
-    expect(html).toContain("未発生");
+    expect(html).toContain("Provisional tally as of now");
+    expect(html).toContain("not yet");
   });
 
   it("renders finished summary with an observerJoiner that joined and later left", () => {
@@ -66,12 +66,12 @@ describe("SimulationSummaryPanel", () => {
 
     const html = renderToStaticMarkup(createElement(SimulationSummaryPanel, { state }));
 
-    expect(html).toContain("終了済み");
+    expect(html).toContain("finished");
     expect(html).toContain("tick 6");
-    expect(html).toContain("成立済みグループ");
+    expect(html).toContain("confirmed group");
     expect(html).toContain("tick 10");
     expect(html).toContain("tick 12");
-    expect(html).not.toContain("現在時点の暫定集計");
+    expect(html).not.toContain("Provisional tally as of now");
   });
 
   it("shows explicit placeholders when nucleus/group formation and observerJoiner activity never occurred", () => {
@@ -80,8 +80,8 @@ describe("SimulationSummaryPanel", () => {
 
     const html = renderToStaticMarkup(createElement(SimulationSummaryPanel, { state }));
 
-    expect(html).toContain("未参加");
-    expect(html).toContain("未離脱");
-    expect(html).toContain("未発生");
+    expect(html).toContain("not joined");
+    expect(html).toContain("not left");
+    expect(html).toContain("not yet");
   });
 });

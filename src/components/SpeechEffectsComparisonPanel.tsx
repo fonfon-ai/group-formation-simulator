@@ -23,10 +23,10 @@ type Props = {
 const DEFAULT_RUN_COUNT = 30;
 
 const DIMENSION_LABEL: Record<SpeechEffectDimension, string> = {
-  stress: "ストレス(greet)",
-  attractiveness: "魅力度(welcome)",
-  approachProbability: "接近確率(invite)",
-  leaveThreshold: "離脱しきい値(decline)",
+  stress: "Stress (greet)",
+  attractiveness: "Attractiveness (welcome)",
+  approachProbability: "Approach probability (invite)",
+  leaveThreshold: "Leave threshold (decline)",
 };
 
 const DIMENSIONS: SpeechEffectDimension[] = ["approachProbability", "attractiveness", "stress", "leaveThreshold"];
@@ -53,7 +53,7 @@ function formatCount(value: number): string {
 }
 
 function formatCountDelta(delta: number): string {
-  return `${delta > 0 ? "+" : ""}${delta.toFixed(1)}人`;
+  return `${delta > 0 ? "+" : ""}${delta.toFixed(1)}`;
 }
 
 function formatCorrection(value: number): string {
@@ -131,15 +131,16 @@ export function SpeechEffectsComparisonPanel({
 
   return (
     <div className="panel monte-carlo-panel speech-effects-comparison-panel">
-      <h2>発言効果ON/OFFの比較</h2>
+      <h2>Speech effects ON/OFF comparison</h2>
       <p className="monte-carlo-note">
-        現在のプリセット・パラメータ・介入({getInterventionById(interventionId).name})・baseSeedを固定したまま、
-        Phase 3発言効果(発言の認知・解釈・状態への補正)だけをOFF/ONで切り替えて、同じseed列で比較します。
+        Keeping the current preset, parameters, intervention ({getInterventionById(interventionId).name}), and baseSeed
+        fixed, this toggles only the Phase 3 speech effects (speech reception, interpretation, and state adjustments)
+        OFF/ON and compares over the same seed sequence.
       </p>
 
       <label className="field">
         <span>
-          実行回数（{MIN_RUNS}〜{MAX_RUNS}）
+          Number of runs ({MIN_RUNS}–{MAX_RUNS})
         </span>
         <input
           type="number"
@@ -151,75 +152,75 @@ export function SpeechEffectsComparisonPanel({
       </label>
       {!runCountValid && (
         <p className="monte-carlo-error">
-          実行回数は{MIN_RUNS}〜{MAX_RUNS}の整数で指定してください。
+          Enter the number of runs as an integer from {MIN_RUNS} to {MAX_RUNS}.
         </p>
       )}
 
-      {singleSimRunning && <p className="monte-carlo-note">実行すると、単発シミュレーションは一時停止します。</p>}
+      {singleSimRunning && <p className="monte-carlo-note">Running this will pause the single simulation.</p>}
 
       <button type="button" onClick={handleRun} disabled={!runCountValid}>
-        発言効果OFF/ONを比較して実行（baseSeed {seed}〜）
+        Compare speech effects OFF/ON (baseSeed {seed}+)
       </button>
 
       {result === null ? (
         <p className="monte-carlo-empty">
-          実行すると、発言効果「OFF」と「ON」を同一条件(プリセット・パラメータ・介入・baseSeed・実行回数)で比較できます。
+          Run this to compare speech effects "OFF" and "ON" under identical conditions (preset, parameters, intervention, baseSeed, run count).
         </p>
       ) : (
         <>
           <p className="monte-carlo-condition">
-            条件: {resultPresetName} / 介入: {resultInterventionName} / baseSeed {result.off.config.baseSeed}〜
-            {result.off.config.baseSeed + resultRuns - 1} ({resultRuns}回)
+            Conditions: {resultPresetName} / intervention: {resultInterventionName} / baseSeed {result.off.config.baseSeed}–
+            {result.off.config.baseSeed + resultRuns - 1} ({resultRuns} runs)
           </p>
           {isStale && (
-            <p className="monte-carlo-stale">現在の条件と異なる結果です。再実行すると最新の条件で更新されます。</p>
+            <p className="monte-carlo-stale">These results are from different conditions. Re-run to update to the latest conditions.</p>
           )}
 
           <section className="intervention-comparison-summary">
             <div className="intervention-comparison-row intervention-comparison-header">
               <span></span>
-              <span>発言効果OFF</span>
-              <span>発言効果ON</span>
-              <span>差分</span>
+              <span>Speech effects OFF</span>
+              <span>Speech effects ON</span>
+              <span>Delta</span>
             </div>
             <MetricRow
-              label="observerJoiner参加率"
+              label="observerJoiner join rate"
               off={formatRate(result.metrics.observerJoinerJoinRate.baseline)}
               on={formatRate(result.metrics.observerJoinerJoinRate.intervention)}
               delta={formatRateDelta(result.metrics.observerJoinerJoinRate.delta)}
             />
             <MetricRow
-              label="observerJoiner離脱率"
+              label="observerJoiner leave rate"
               off={formatRate(result.metrics.observerJoinerLeaveRate.baseline)}
               on={formatRate(result.metrics.observerJoinerLeaveRate.intervention)}
               delta={formatRateDelta(result.metrics.observerJoinerLeaveRate.delta)}
             />
             <MetricRow
-              label="グループ不成立率"
+              label="Group-failure rate"
               off={formatRate(result.metrics.groupFailureRate.baseline)}
               on={formatRate(result.metrics.groupFailureRate.intervention)}
               delta={formatRateDelta(result.metrics.groupFailureRate.delta)}
             />
             <MetricRow
-              label="平均グループ成立tick"
+              label="Avg. group-confirmed tick"
               off={formatOptionalTick(result.metrics.averageFirstGroupConfirmedTick.baseline)}
               on={formatOptionalTick(result.metrics.averageFirstGroupConfirmedTick.intervention)}
               delta={formatOptionalTickDelta(result.metrics.averageFirstGroupConfirmedTick.delta)}
             />
             <MetricRow
-              label="後乗り成功率"
+              label="Late-join success rate"
               off={formatRate(result.metrics.lateJoinSuccessRate.baseline)}
               on={formatRate(result.metrics.lateJoinSuccessRate.intervention)}
               delta={formatRateDelta(result.metrics.lateJoinSuccessRate.delta)}
             />
             <MetricRow
-              label="平均参加人数"
+              label="Avg. joined count"
               off={formatCount(result.metrics.averageJoinedCount.baseline)}
               on={formatCount(result.metrics.averageJoinedCount.intervention)}
               delta={formatCountDelta(result.metrics.averageJoinedCount.delta)}
             />
             <MetricRow
-              label="平均帰宅人数"
+              label="Avg. left count"
               off={formatCount(result.metrics.averageLeftCount.baseline)}
               on={formatCount(result.metrics.averageLeftCount.intervention)}
               delta={formatCountDelta(result.metrics.averageLeftCount.delta)}
@@ -227,27 +228,27 @@ export function SpeechEffectsComparisonPanel({
           </section>
 
           <section className="intervention-comparison-summary speech-effects-phase3-summary">
-            <h3>Phase 3固有指標</h3>
+            <h3>Phase 3-specific metrics</h3>
             <div className="intervention-comparison-row intervention-comparison-header">
               <span></span>
-              <span>発言効果OFF</span>
-              <span>発言効果ON</span>
-              <span>差分</span>
+              <span>Speech effects OFF</span>
+              <span>Speech effects ON</span>
+              <span>Delta</span>
             </div>
             <MetricRow
-              label="observerJoiner発言認知率"
+              label="observerJoiner speech-reception rate"
               off={formatRate(result.phase3Metrics.observerJoinerHeardSpeechRate.baseline)}
               on={formatRate(result.phase3Metrics.observerJoinerHeardSpeechRate.intervention)}
               delta={formatRateDelta(result.phase3Metrics.observerJoinerHeardSpeechRate.delta)}
             />
             <MetricRow
-              label="解釈/効果が発生したrun率"
+              label="Rate of runs with interpretation/effect"
               off={formatRate(result.phase3Metrics.interpretationOrEffectRate.baseline)}
               on={formatRate(result.phase3Metrics.interpretationOrEffectRate.intervention)}
               delta={formatRateDelta(result.phase3Metrics.interpretationOrEffectRate.delta)}
             />
             <MetricRow
-              label="状態遷移へ発言効果が寄与したrun率"
+              label="Rate of runs where speech effects influenced a transition"
               off={formatRate(result.phase3Metrics.transitionInfluencedRate.baseline)}
               on={formatRate(result.phase3Metrics.transitionInfluencedRate.intervention)}
               delta={formatRateDelta(result.phase3Metrics.transitionInfluencedRate.delta)}
@@ -255,7 +256,7 @@ export function SpeechEffectsComparisonPanel({
             {DIMENSIONS.map((dimension) => (
               <MetricRow
                 key={dimension}
-                label={`平均累積補正: ${DIMENSION_LABEL[dimension]}`}
+                label={`Avg. cumulative adjustment: ${DIMENSION_LABEL[dimension]}`}
                 off={formatCorrection(result.phase3Metrics.dimensionTotals[dimension].baseline)}
                 on={formatCorrection(result.phase3Metrics.dimensionTotals[dimension].intervention)}
                 delta={formatCorrectionDelta(result.phase3Metrics.dimensionTotals[dimension].delta)}

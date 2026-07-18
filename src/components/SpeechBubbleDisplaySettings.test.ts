@@ -13,7 +13,7 @@ function render(settings: SpeechBubbleDisplaySettingsState) {
 describe("SpeechBubbleDisplaySettings", () => {
   it("renders the non-intervention note and a checkbox reflecting the enabled state", () => {
     const html = render(DEFAULT_SPEECH_BUBBLE_DISPLAY_SETTINGS);
-    expect(html).toContain("結果は変わりません");
+    expect(html).toContain("does not change the simulation result");
     expect(html).toContain('type="checkbox"');
     expect(html).toContain('checked=""');
   });

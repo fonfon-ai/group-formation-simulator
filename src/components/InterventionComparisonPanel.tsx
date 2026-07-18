@@ -40,7 +40,7 @@ function formatCount(value: number): string {
 }
 
 function formatCountDelta(delta: number): string {
-  return `${delta > 0 ? "+" : ""}${delta.toFixed(1)}人`;
+  return `${delta > 0 ? "+" : ""}${delta.toFixed(1)}`;
 }
 
 type MetricRowProps = {
@@ -101,17 +101,17 @@ export function InterventionComparisonPanel({
 
   return (
     <div className="panel monte-carlo-panel intervention-comparison-panel">
-      <h2>介入なしとの比較</h2>
+      <h2>Comparison vs. no intervention</h2>
 
       {isNone ? (
         <p className="monte-carlo-empty">
-          「介入なし」が選択されているため比較できません。介入シナリオを選択すると、介入なしとの差分をここで確認できます。
+          "No intervention" is selected, so there's nothing to compare. Pick an intervention scenario to see its difference from no intervention here.
         </p>
       ) : (
         <>
           <label className="field">
             <span>
-              実行回数（{MIN_RUNS}〜{MAX_RUNS}）
+              Number of runs ({MIN_RUNS}–{MAX_RUNS})
             </span>
             <input
               type="number"
@@ -123,80 +123,80 @@ export function InterventionComparisonPanel({
           </label>
           {!runCountValid && (
             <p className="monte-carlo-error">
-              実行回数は{MIN_RUNS}〜{MAX_RUNS}の整数で指定してください。
+              Enter the number of runs as an integer from {MIN_RUNS} to {MAX_RUNS}.
             </p>
           )}
 
           {singleSimRunning && (
-            <p className="monte-carlo-note">実行すると、単発シミュレーションは一時停止します。</p>
+            <p className="monte-carlo-note">Running this will pause the single simulation.</p>
           )}
 
           <button type="button" onClick={handleRun} disabled={!runCountValid}>
-            介入なしと比較して実行（baseSeed {seed}〜）
+            Compare against no intervention (baseSeed {seed}+)
           </button>
 
           {result === null ? (
             <p className="monte-carlo-empty">
-              実行すると、「介入なし」と「{getInterventionById(interventionId).name}」を同一条件(プリセット・
-              パラメータ・baseSeed・実行回数)で比較できます。
+              Run this to compare "No intervention" and "{getInterventionById(interventionId).name}" under identical
+              conditions (preset, parameters, baseSeed, run count).
             </p>
           ) : (
             <>
               <p className="monte-carlo-condition">
-                条件: {resultPresetName} / 介入: {resultInterventionName}(介入なしと比較) / baseSeed{" "}
-                {result.baseline.config.baseSeed}〜{result.baseline.config.baseSeed + resultRuns - 1} ({resultRuns}回)
+                Conditions: {resultPresetName} / intervention: {resultInterventionName} (vs. no intervention) / baseSeed{" "}
+                {result.baseline.config.baseSeed}–{result.baseline.config.baseSeed + resultRuns - 1} ({resultRuns} runs)
               </p>
               {isStale && (
                 <p className="monte-carlo-stale">
-                  現在の条件と異なる結果です。再実行すると最新の条件で更新されます。
+                  These results are from different conditions. Re-run to update to the latest conditions.
                 </p>
               )}
 
               <section className="intervention-comparison-summary">
                 <div className="intervention-comparison-row intervention-comparison-header">
                   <span></span>
-                  <span>介入なし</span>
+                  <span>No intervention</span>
                   <span>{resultInterventionName}</span>
-                  <span>差分</span>
+                  <span>Delta</span>
                 </div>
                 <MetricRow
-                  label="observerJoiner参加率"
+                  label="observerJoiner join rate"
                   baseline={formatRate(result.metrics.observerJoinerJoinRate.baseline)}
                   intervention={formatRate(result.metrics.observerJoinerJoinRate.intervention)}
                   delta={formatRateDelta(result.metrics.observerJoinerJoinRate.delta)}
                 />
                 <MetricRow
-                  label="observerJoiner離脱率"
+                  label="observerJoiner leave rate"
                   baseline={formatRate(result.metrics.observerJoinerLeaveRate.baseline)}
                   intervention={formatRate(result.metrics.observerJoinerLeaveRate.intervention)}
                   delta={formatRateDelta(result.metrics.observerJoinerLeaveRate.delta)}
                 />
                 <MetricRow
-                  label="グループ不成立率"
+                  label="Group-failure rate"
                   baseline={formatRate(result.metrics.groupFailureRate.baseline)}
                   intervention={formatRate(result.metrics.groupFailureRate.intervention)}
                   delta={formatRateDelta(result.metrics.groupFailureRate.delta)}
                 />
                 <MetricRow
-                  label="平均グループ成立tick"
+                  label="Avg. group-confirmed tick"
                   baseline={formatOptionalTick(result.metrics.averageFirstGroupConfirmedTick.baseline)}
                   intervention={formatOptionalTick(result.metrics.averageFirstGroupConfirmedTick.intervention)}
                   delta={formatOptionalTickDelta(result.metrics.averageFirstGroupConfirmedTick.delta)}
                 />
                 <MetricRow
-                  label="後乗り成功率"
+                  label="Late-join success rate"
                   baseline={formatRate(result.metrics.lateJoinSuccessRate.baseline)}
                   intervention={formatRate(result.metrics.lateJoinSuccessRate.intervention)}
                   delta={formatRateDelta(result.metrics.lateJoinSuccessRate.delta)}
                 />
                 <MetricRow
-                  label="平均参加人数"
+                  label="Avg. joined count"
                   baseline={formatCount(result.metrics.averageJoinedCount.baseline)}
                   intervention={formatCount(result.metrics.averageJoinedCount.intervention)}
                   delta={formatCountDelta(result.metrics.averageJoinedCount.delta)}
                 />
                 <MetricRow
-                  label="平均帰宅人数"
+                  label="Avg. left count"
                   baseline={formatCount(result.metrics.averageLeftCount.baseline)}
                   intervention={formatCount(result.metrics.averageLeftCount.intervention)}
                   delta={formatCountDelta(result.metrics.averageLeftCount.delta)}

@@ -39,7 +39,7 @@ describe("formatSpeechBubbleText", () => {
     const text = formatSpeechBubbleText(event, labelById);
     expect(text.startsWith("💬")).toBe(true);
     expect(text).not.toContain("（");
-    expect(text).toContain("もう一軒行く?");
+    expect(text).toContain("Shall we go somewhere next?");
   });
 
   it("appends a destination hint for a target-directed speech event", () => {
@@ -51,8 +51,8 @@ describe("formatSpeechBubbleText", () => {
       target: "agent-b",
     });
     const text = formatSpeechBubbleText(event, labelById);
-    expect(text).toContain("→");
-    expect(text).toContain("Bさんへ");
+    expect(text).toContain("Come on over");
+    expect(text).toContain("(to B)");
   });
 
   it("appends a destination hint for an audience-directed speech event", () => {
@@ -64,6 +64,6 @@ describe("formatSpeechBubbleText", () => {
       audience: "nearby",
     });
     const text = formatSpeechBubbleText(event, labelById);
-    expect(text).toContain("→周囲へ");
+    expect(text).toContain("(nearby)");
   });
 });

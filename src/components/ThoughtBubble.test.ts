@@ -10,15 +10,14 @@ describe("ThoughtBubble", () => {
     agentX: 400,
     agentY: 260,
     agentRadius: 9,
-    text: "そろそろ潮時かもしれない",
+    text: "Time to go",
     canvasWidth: 800,
     canvasHeight: 520,
   });
 
-  it("wraps the resolved text in full-width brackets to mark it as a thought, not speech", () => {
+  it("wraps the resolved text in parentheses to mark it as a thought, not speech", () => {
     const html = renderToStaticMarkup(createElement(ThoughtBubble, { layout }));
-    expect(html).toContain("（");
-    expect(html).toContain("）");
+    expect(html).toContain("(Time to go)");
   });
 
   it("renders a dashed-outline bubble shape distinct from a plain label", () => {
@@ -39,7 +38,7 @@ describe("ThoughtBubble", () => {
       agentX: 400,
       agentY: 260,
       agentRadius: 9,
-      text: "あ".repeat(30),
+      text: "a".repeat(30),
       canvasWidth: 800,
       canvasHeight: 520,
     });

@@ -13,7 +13,9 @@ import { formatSpeechDestination } from "./speechDisplay";
  *   経由)をそのまま再利用するため、ここでは1本の文字列を返すだけでよい。
  */
 export function formatSpeechBubbleText(event: SpeechEvent, labelById: Map<string, string>): string {
-  const destination = formatSpeechDestination(event, labelById);
+  // Keep the on-canvas bubble compact: a broadcast uses a short "(nearby)" hint instead of the
+  // event log's fuller "to those nearby", so the bubble doesn't truncate its own destination.
+  const destination = event.audience === "nearby" ? "nearby" : formatSpeechDestination(event, labelById);
   const text = resolveSpeechEventText(event);
-  return `💬${text}${destination ? `→${destination}` : ""}`;
+  return `💬${text}${destination ? ` (${destination})` : ""}`;
 }

@@ -94,7 +94,7 @@ export function createInitialState(
   const log: LogEntry[] = [
     {
       tick: 0,
-      message: "参加者が集まり始めた。まだ誰も二次会に行くかは決めていない。",
+      message: "The participants are gathering. Nobody has decided yet whether to go on to a next round.",
       tags: ["simulation"],
       eventType: "simulationStarted",
     },
@@ -102,7 +102,7 @@ export function createInitialState(
   if (scenario.id !== "none") {
     log.push({
       tick: 0,
-      message: `${formatTick(0)} 介入シナリオ「${scenario.name}」が適用された`,
+      message: `${formatTick(0)} Intervention scenario "${scenario.name}" applied`,
       tags: ["intervention"],
       eventType: "interventionApplied",
       metadata: { interventionId: scenario.id },
@@ -124,7 +124,7 @@ export function createInitialState(
     pushLog(
       log,
       0,
-      `幹事が「行く人は店の前に集まりましょう」と集合場所を明示した`,
+      `The organizer announced a meeting point: "Anyone coming, gather in front of the venue."`,
       ["intervention"],
       "publicMeetingPointEstablished",
       { groupId: meetingPoint.id },
@@ -134,7 +134,7 @@ export function createInitialState(
     pushLog(
       log,
       0,
-      `誰かが「途中参加OK、後から合流してもいいよ」と明示した`,
+      `Someone announced: "Late arrivals are fine — feel free to join later."`,
       ["intervention"],
       "lateJoinPermissionAnnounced",
     );
@@ -143,7 +143,7 @@ export function createInitialState(
     pushLog(
       log,
       0,
-      `挙手ではなく紙に丸をつけるような、匿名・低圧に参加意向を示せる方法が用意された`,
+      `A low-pressure, anonymous way to signal interest was set up (e.g. circling on paper instead of raising a hand).`,
       ["intervention"],
       "anonymousIntentSignalAnnounced",
     );
@@ -388,7 +388,7 @@ export function stepSimulation(
         pushLog(
           log,
           tick,
-          `${agent.label}さんが「もう一軒行く?」と発言し、核を作り始めた`,
+          `${agent.label} said "Shall we go somewhere next?" and started forming a core`,
           ["nucleus"],
           "nucleusCreated",
           { agentId: agent.id, agentLabel: agent.label, groupId: candidate.id },
@@ -421,7 +421,7 @@ export function stepSimulation(
       pushLog(
         log,
         tick,
-        `${inviter.label}さんがobserverJoinerに「よかったら一緒に行く?」と軽く声をかけた`,
+        `${inviter.label} gently invited the observerJoiner: "Want to come along?"`,
         ["observerJoiner", "intervention"],
         "observerInvited",
         {
@@ -480,16 +480,16 @@ export function stepSimulation(
         pushLog(
           log,
           tick,
-          `observerJoinerが${candidate.status === "confirmed" ? "成立済みグループ" : "できかけの輪"}に近づき始めた`,
+          `The observerJoiner started moving toward ${candidate.status === "confirmed" ? "a confirmed group" : "a forming circle"}`,
           ["observerJoiner"],
           "observerApproached",
           { agentId: agent.id, agentLabel: agent.label, groupId: candidate.id, groupStatus: candidate.status },
         );
       } else {
-        pushLog(log, tick, `${agent.label}さんが輪の近くに移動`);
+        pushLog(log, tick, `${agent.label} moved closer to a circle`);
       }
     } else if (agent.isObserverJoiner && rng.chance(0.1)) {
-      pushLog(log, tick, `observerJoinerは様子見を継続`, ["observerJoiner"]);
+      pushLog(log, tick, `The observerJoiner keeps waiting and watching`, ["observerJoiner"]);
     }
   }
 
@@ -513,8 +513,8 @@ export function stepSimulation(
           log,
           tick,
           candidate.status === "confirmed"
-            ? `observerJoinerが成立済みグループに参加`
-            : `observerJoinerが未確定の輪に合流`,
+            ? `The observerJoiner joined a confirmed group`
+            : `The observerJoiner joined a forming circle`,
           ["observerJoiner"],
           candidate.status === "confirmed" ? "observerJoinedConfirmed" : "observerJoinedForming",
           { agentId: agent.id, agentLabel: agent.label, groupId: candidate.id, joinedGroupStatus: candidate.status },
@@ -524,8 +524,8 @@ export function stepSimulation(
           log,
           tick,
           candidate.status === "confirmed"
-            ? `${agent.label}さんが成立済みグループに参加`
-            : `${agent.label}さんが輪に合流`,
+            ? `${agent.label} joined a confirmed group`
+            : `${agent.label} joined a circle`,
         );
       }
     }
@@ -620,13 +620,13 @@ export function stepSimulation(
         pushLog(
           log,
           tick,
-          `observerJoinerは曖昧な時間に耐えられず帰宅方向へ`,
+          `The observerJoiner couldn't bear the ambiguity and headed home`,
           ["observerJoiner", "leave"],
           "observerLeaveStarted",
           { agentId: agent.id, agentLabel: agent.label },
         );
       } else {
-        pushLog(log, tick, `${agent.label}さんが帰宅方向へ移動`, ["leave"]);
+        pushLog(log, tick, `${agent.label} headed home`, ["leave"]);
       }
     }
   }
@@ -639,7 +639,7 @@ export function stepSimulation(
     if (agent.y >= WORLD_HEIGHT - 6) {
       agent.state = "left";
       if (agent.isObserverJoiner) {
-        pushLog(log, tick, `observerJoinerが画面外へ退出した`, ["observerJoiner", "leave"], "observerLeft", {
+        pushLog(log, tick, `The observerJoiner left the scene`, ["observerJoiner", "leave"], "observerLeft", {
           agentId: agent.id,
           agentLabel: agent.label,
         });
@@ -682,7 +682,7 @@ export function stepSimulation(
 
     if (nearbyCount >= effectiveParams.groupConfirmSize) {
       candidate.status = "confirmed";
-      pushLog(log, tick, `${nearbyCount}人が集まり二次会グループが成立`, ["groupConfirmed"], "groupConfirmed", {
+      pushLog(log, tick, `${nearbyCount} people gathered and a next-round group was confirmed`, ["groupConfirmed"], "groupConfirmed", {
         groupId: candidate.id,
         memberCount: nearbyCount,
       });
@@ -710,7 +710,7 @@ export function stepSimulation(
       pushLog(
         log,
         tick,
-        `できかけの輪への反応が薄く、そのまま自然消滅した`,
+        `The forming circle drew little response and quietly faded away`,
         ["groupLifecycle"],
         "groupDissolved",
         { groupId: candidate.id, memberCount: candidate.memberIds.length },
@@ -721,7 +721,7 @@ export function stepSimulation(
       pushLog(
         log,
         tick,
-        `輪(${candidate.memberIds.length}人)は二次会成立に至らないまま時間切れになった`,
+        `A circle (${candidate.memberIds.length} people) ran out of time without becoming a next-round group`,
         ["groupLifecycle"],
         "groupExpired",
         { groupId: candidate.id, memberCount: candidate.memberIds.length },
@@ -767,7 +767,7 @@ export function stepSimulation(
     pushLog(
       log,
       tick,
-      `シミュレーション終了: 参加${joinedCount}人 / 帰宅${leftCount}人`,
+      `Simulation finished: ${joinedCount} joined / ${leftCount} left`,
       ["simulation"],
       "simulationFinished",
     );

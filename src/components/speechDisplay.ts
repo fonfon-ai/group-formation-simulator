@@ -3,12 +3,12 @@ import { resolveSpeechEventText } from "../simulation/speechTemplates";
 import { formatTick } from "../simulation/time";
 import type { Agent } from "../simulation/types";
 
-/** `SpeechIntent`の日本語ラベル。状態ログ・Inspectorの両方で使う */
+/** `SpeechIntent`の表示ラベル。状態ログ・Inspectorの両方で使う */
 const INTENT_LABEL: Record<SpeechIntent, string> = {
-  invite: "誘う",
-  welcome: "歓迎",
-  greet: "挨拶",
-  decline: "辞退",
+  invite: "Invite",
+  welcome: "Welcome",
+  greet: "Greet",
+  decline: "Decline",
 };
 
 export function speechIntentLabel(intent: SpeechIntent): string {
@@ -31,10 +31,10 @@ export function resolveLabel(agentId: string, labelById: Map<string, string>): s
  */
 export function formatSpeechDestination(event: SpeechEvent, labelById: Map<string, string>): string | undefined {
   if (event.target) {
-    return `${resolveLabel(event.target, labelById)}さんへ`;
+    return `to ${resolveLabel(event.target, labelById)}`;
   }
   if (event.audience === "nearby") {
-    return "周囲へ";
+    return "to those nearby";
   }
   return undefined;
 }
@@ -48,7 +48,7 @@ export function formatSpeechLogMessage(event: SpeechEvent, labelById: Map<string
   const speakerLabel = resolveLabel(event.speakerId, labelById);
   const destination = formatSpeechDestination(event, labelById);
   const text = resolveSpeechEventText(event);
-  return `${formatTick(event.tick)} ${speakerLabel}さんが${destination ?? ""}「${text}」と発言(${speechIntentLabel(event.intent)})`;
+  return `${formatTick(event.tick)} ${speakerLabel} said${destination ? ` ${destination}` : ""}: "${text}" (${speechIntentLabel(event.intent)})`;
 }
 
 /**

@@ -70,7 +70,7 @@ describe("stepSimulation: group confirmation", () => {
     const next = runTicks(state, params);
 
     expect(next.groupCandidates[0].status).toBe("confirmed");
-    expect(next.log.some((e) => e.message.includes("成立"))).toBe(true);
+    expect(next.log.some((e) => e.message.includes("confirmed"))).toBe(true);
     expect(next.log.some((e) => e.tags.includes("groupConfirmed"))).toBe(true);
   });
 
@@ -125,7 +125,7 @@ describe("stepSimulation: unconfirmed candidate lifecycle (dissolve/expire)", ()
     const next = runTicks(state);
 
     expect(next.groupCandidates[0].status).toBe("dissolving");
-    expect(next.log.some((e) => e.message.includes("自然消滅"))).toBe(true);
+    expect(next.log.some((e) => e.message.includes("faded away"))).toBe(true);
     expect(next.log.some((e) => e.tags.includes("groupLifecycle"))).toBe(true);
     // 輪を失ったfounderはundecidedに戻り、意思決定をやり直せる
     expect(next.agents[0].state).toBe("undecided");
@@ -158,7 +158,7 @@ describe("stepSimulation: unconfirmed candidate lifecycle (dissolve/expire)", ()
     const next = runTicks(state, params);
 
     expect(next.groupCandidates[0].status).toBe("expired");
-    expect(next.log.some((e) => e.message.includes("時間切れ"))).toBe(true);
+    expect(next.log.some((e) => e.message.includes("ran out of time"))).toBe(true);
     expect(next.log.some((e) => e.tags.includes("groupLifecycle"))).toBe(true);
   });
 
@@ -423,10 +423,10 @@ describe("stepSimulation: observerJoiner arrival logging", () => {
       finished: false,
     };
     const nextA = runTicks(stateA);
-    expect(nextA.log.some((e) => e.message.includes("observerJoinerが未確定の輪に合流"))).toBe(true);
+    expect(nextA.log.some((e) => e.message.includes("joined a forming circle"))).toBe(true);
     expect(
       nextA.log.some(
-        (e) => e.message.includes("observerJoinerが未確定の輪に合流") && e.tags.includes("observerJoiner"),
+        (e) => e.message.includes("joined a forming circle") && e.tags.includes("observerJoiner"),
       ),
     ).toBe(true);
 
@@ -456,10 +456,10 @@ describe("stepSimulation: observerJoiner arrival logging", () => {
       finished: false,
     };
     const nextB = runTicks(stateB);
-    expect(nextB.log.some((e) => e.message.includes("observerJoinerが成立済みグループに参加"))).toBe(true);
+    expect(nextB.log.some((e) => e.message.includes("joined a confirmed group"))).toBe(true);
     expect(
       nextB.log.some(
-        (e) => e.message.includes("observerJoinerが成立済みグループに参加") && e.tags.includes("observerJoiner"),
+        (e) => e.message.includes("joined a confirmed group") && e.tags.includes("observerJoiner"),
       ),
     ).toBe(true);
   });

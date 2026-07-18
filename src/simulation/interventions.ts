@@ -65,21 +65,21 @@ const UNIT_RANGE_KEYS: readonly (keyof SimParams)[] = [
 
 export const NONE_INTERVENTION: InterventionScenario = {
   id: "none",
-  name: "介入なし",
-  description: "場の設計に対する介入を何も行わない。通常のプリセットのみで進行する。",
+  name: "No intervention",
+  description: "No intervention is made to the setting. The scenario runs on the preset alone.",
   category: "none",
-  expectedEffect: "既存プリセットの挙動をそのまま観察するための基準点(ベースライン)。",
+  expectedEffect: "A baseline for observing the preset's behavior as-is.",
 };
 
 export const INTERVENTION_SCENARIOS: InterventionScenario[] = [
   NONE_INTERVENTION,
   {
     id: "explicit-meeting-point",
-    name: "集合場所の明示",
-    description: "幹事が「行く人は店の前に集まりましょう」と、集合場所を明示的にアナウンスする。",
+    name: "Explicit meeting point",
+    description: `The organizer explicitly announces a meeting point: "Anyone coming, let's gather in front of the venue."`,
     category: "publicCoordination",
     expectedEffect:
-      "どこに向かえばよいかが明確になり、輪を見つけられず様子見のまま留まる時間が減る。後乗りもしやすくなる。",
+      "It becomes clear where to head, so less time is spent waiting and watching without finding a circle. Joining late also gets easier.",
     paramAdjustments: {
       ambiguityDuration: 0.2,
       lateJoinEase: 0.1,
@@ -91,10 +91,10 @@ export const INTERVENTION_SCENARIOS: InterventionScenario[] = [
   },
   {
     id: "late-join-ok",
-    name: "途中参加OKの明示",
-    description: "「途中参加OK」「後から合流もOK」と誰かが明示的に宣言する。",
+    name: "Explicit late-join permission",
+    description: `Someone explicitly declares "late joins are OK" and "you can catch up later."`,
     category: "socialPermission",
-    expectedEffect: "後から合流することへの心理的ハードルが下がり、成立済みグループへの参加確率が上がる。",
+    expectedEffect: "The psychological barrier to joining later drops, raising the chance of joining a confirmed group.",
     paramAdjustments: {
       lateJoinEase: 0.3,
     },
@@ -108,11 +108,11 @@ export const INTERVENTION_SCENARIOS: InterventionScenario[] = [
   },
   {
     id: "light-observer-invitation",
-    name: "observerJoinerへの軽い声かけ",
-    description: "参加者のうち1人が、observerJoinerに「一緒行く?」と軽く声をかける。",
+    name: "A gentle nudge to the observerJoiner",
+    description: `One of the participants gently invites the observerJoiner: "Want to come along?"`,
     category: "targetedSupport",
     expectedEffect:
-      "observerJoiner自身が場を動かさなくても接近のきっかけが生まれ、影響回避の壁がある人でも輪に近づきやすくなる。",
+      "The observerJoiner gets a reason to approach without having to move the room themselves, so even someone with a wall of influence-avoidance finds it easier to near a circle.",
     paramAdjustments: {
       observerInfluenceAvoidance: -0.2,
       observerLeaveEase: -0.1,
@@ -130,10 +130,10 @@ export const INTERVENTION_SCENARIOS: InterventionScenario[] = [
   },
   {
     id: "short-ambiguity-window",
-    name: "曖昧時間の短縮",
-    description: "店外で全員が様子見になる曖昧な時間そのものを短くする(例: 早めに意思確認の声をかける)。",
+    name: "Shorter ambiguity window",
+    description: "Shorten the ambiguous stretch where everyone stands around outside waiting (e.g. check people's intentions early).",
     category: "timeDesign",
-    expectedEffect: "曖昧フェーズが長引く負担が減り、ストレスが閾値を超えて離脱する前に決着がつきやすくなる。",
+    expectedEffect: "Less burden from a drawn-out ambiguous phase, so things tend to settle before stress crosses the threshold and people leave.",
     paramAdjustments: {
       ambiguityDuration: 0.2,
     },
@@ -145,11 +145,11 @@ export const INTERVENTION_SCENARIOS: InterventionScenario[] = [
   },
   {
     id: "predecided-venue",
-    name: "二次会会場の事前決定",
-    description: "二次会に行くかどうかは曖昧なままでも、場所だけは先に決めておく。",
+    name: "Next-round venue decided in advance",
+    description: "Even if it's still unclear who's going, the venue for the next round is settled ahead of time.",
     category: "publicCoordination",
     expectedEffect:
-      "「どこに行くか」の不確実性だけを先に取り除くことで、行くかどうかの判断に集中しやすくなり、輪への接近もしやすくなる。",
+      "Removing just the \"where to go\" uncertainty up front makes it easier to focus on the go/no-go decision, and easier to approach a circle.",
     paramAdjustments: {
       lateJoinEase: 0.15,
     },
@@ -160,12 +160,12 @@ export const INTERVENTION_SCENARIOS: InterventionScenario[] = [
   },
   {
     id: "anonymous-low-pressure-intent",
-    name: "匿名・低圧の意思表明",
+    name: "Anonymous, low-pressure signaling",
     description:
-      "参加表明を匿名・低圧な方法にする(例: 挙手ではなく紙に丸をつける、こっそりスタンプを押す等)。",
+      "Make signaling interest anonymous and low-pressure (e.g. circling on paper instead of raising a hand, quietly tapping a stamp).",
     category: "socialPermission",
     expectedEffect:
-      "influenceAvoidanceが高い人でも、目立たない形でなら「行きたい」という意思を表明しやすくなる。",
+      "Even people high in influence-avoidance find it easier to signal \"I want to go\" when they can do so inconspicuously.",
     paramAdjustments: {
       observerInfluenceAvoidance: -0.3,
     },

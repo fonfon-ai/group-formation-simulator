@@ -82,14 +82,14 @@ function candidateRingClass(candidate: GroupCandidate): string {
 function candidateLabel(candidate: GroupCandidate): string {
   switch (candidate.status) {
     case "confirmed":
-      return "二次会グループ";
+      return "Next-round group";
     case "dissolving":
     case "dissolved":
-      return "解散した輪";
+      return "Dissolved circle";
     case "expired":
-      return "時間切れの輪";
+      return "Timed-out circle";
     default:
-      return "形成中の輪";
+      return "Forming circle";
   }
 }
 
@@ -176,7 +176,7 @@ export function SimulationCanvas({ agents, groupCandidates, width, height, thoug
         width="100%"
         height={height}
         role="img"
-        aria-label="グループ形成シミュレーション領域"
+        aria-label="Group formation simulation area"
       >
         <rect x={0} y={0} width={width} height={height} className="canvas-bg" />
 

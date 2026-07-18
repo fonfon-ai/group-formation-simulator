@@ -47,22 +47,22 @@ const labelById = buildAgentLabelMap([
 ]);
 
 describe("speechEffectDimensionLabel / speechInterpretationValenceLabel / speechInterpretationFactorLabel", () => {
-  it("maps every SpeechEffectDimension to a Japanese label", () => {
-    expect(speechEffectDimensionLabel("stress")).toBe("ストレス蓄積率");
-    expect(speechEffectDimensionLabel("attractiveness")).toBe("輪の魅力度");
-    expect(speechEffectDimensionLabel("approachProbability")).toBe("接近確率");
-    expect(speechEffectDimensionLabel("leaveThreshold")).toBe("離脱しきい値");
+  it("maps every SpeechEffectDimension to a display label", () => {
+    expect(speechEffectDimensionLabel("stress")).toBe("stress accumulation rate");
+    expect(speechEffectDimensionLabel("attractiveness")).toBe("circle attractiveness");
+    expect(speechEffectDimensionLabel("approachProbability")).toBe("approach probability");
+    expect(speechEffectDimensionLabel("leaveThreshold")).toBe("leave threshold");
   });
 
-  it("maps every SpeechInterpretationValence to a Japanese label", () => {
-    expect(speechInterpretationValenceLabel("positive")).toBe("好意的");
-    expect(speechInterpretationValenceLabel("neutral")).toContain("中立");
-    expect(speechInterpretationValenceLabel("negative")).toBe("否定的");
+  it("maps every SpeechInterpretationValence to a display label", () => {
+    expect(speechInterpretationValenceLabel("positive")).toBe("Positive");
+    expect(speechInterpretationValenceLabel("neutral")).toContain("Neutral");
+    expect(speechInterpretationValenceLabel("negative")).toBe("Negative");
   });
 
-  it("maps every factor key to a Japanese label", () => {
-    expect(speechInterpretationFactorLabel("conformity")).toBe("同調傾向");
-    expect(speechInterpretationFactorLabel("influenceAvoidance")).toBe("影響回避度");
+  it("maps every factor key to a display label", () => {
+    expect(speechInterpretationFactorLabel("conformity")).toBe("Conformity");
+    expect(speechInterpretationFactorLabel("influenceAvoidance")).toBe("Influence avoidance");
   });
 });
 
@@ -83,8 +83,8 @@ describe("formatReceptionLine", () => {
     const line = formatReceptionLine(reception, labelById);
 
     expect(line).toContain("Dさん");
-    expect(line).toContain("届いた");
-    expect(line).not.toContain("届かなかった");
+    expect(line).toContain("reached");
+    expect(line).not.toContain("did not reach");
     expect(line).toContain("12.3");
   });
 
@@ -103,8 +103,8 @@ describe("formatReceptionLine", () => {
 
     const line = formatReceptionLine(reception, labelById);
 
-    expect(line).toContain("届かなかった");
-    expect(line).toContain("圏外");
+    expect(line).toContain("did not reach");
+    expect(line).toContain("out of range");
   });
 });
 
@@ -126,14 +126,14 @@ describe("formatInterpretationLine / formatInterpretationFactorLine", () => {
     const line = formatInterpretationLine(interpretation, labelById);
 
     expect(line).toContain("Dさん");
-    expect(line).toContain("好意的");
+    expect(line).toContain("Positive");
     expect(line).toContain("50%");
   });
 
   it("formats a single factor's raw value and contribution", () => {
     const line = formatInterpretationFactorLine(interpretation.factors[0]);
 
-    expect(line).toContain("同調傾向");
+    expect(line).toContain("Conformity");
     expect(line).toContain("0.50");
     expect(line).toContain("0.75");
   });
@@ -159,9 +159,9 @@ describe("formatEffectLine", () => {
     const line = formatEffectLine(effect, labelById);
 
     expect(line).toContain("Dさん");
-    expect(line).toContain("接近確率");
+    expect(line).toContain("approach probability");
     expect(line).toContain("+0.200");
-    expect(line).toContain("持続5tick");
+    expect(line).toContain("lasts 5 ticks");
   });
 });
 
@@ -177,13 +177,13 @@ describe("formatActiveEffectStatusLine", () => {
 
     expect(line).toContain("+0.100");
     expect(line).toContain("+0.200");
-    expect(line).toContain("残り3tick");
+    expect(line).toContain("3 ticks left");
   });
 
   it("reports expiry/replacement when no active status remains", () => {
     const line = formatActiveEffectStatusLine(undefined);
 
-    expect(line).toContain("現在は作用していない");
+    expect(line).toContain("Not currently active");
   });
 });
 
@@ -203,7 +203,7 @@ describe("formatAggregatedEffectSummary / formatContributionLine", () => {
     const withoutTarget: AggregatedActiveEffect = { ...withTarget, targetGroupId: undefined };
 
     expect(formatAggregatedEffectSummary(withTarget)).toContain("group-1");
-    expect(formatAggregatedEffectSummary(withoutTarget)).not.toContain("対象輪");
+    expect(formatAggregatedEffectSummary(withoutTarget)).not.toContain("target circle");
   });
 
   it("formats a contribution's speechEventId, speaker, intent, and value", () => {

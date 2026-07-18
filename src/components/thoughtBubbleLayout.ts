@@ -1,11 +1,11 @@
 /**
  * 心の声吹き出しの、テキスト折り返しと画面内配置(はみ出し補正)を計算する純粋関数群。
  * SimulationCanvasのSVG座標系(state.width/height, agent.x/y)にそのまま乗る値を返す前提で、
- * DOM計測(getBoundingClientRect等)には依存しない。エージェントの日本語一人称的な短文が
- * スペースを含まない前提のため、折り返しは文字数ベースの単純な等幅換算で行う。
+ * DOM計測(getBoundingClientRect等)には依存しない。折り返しは単語(スペース)境界を優先し、
+ * 1単語が1行に収まらない場合のみ文字単位でハードブレークする。
  */
 
-const MAX_CHARS_PER_LINE = 10;
+const MAX_CHARS_PER_LINE = 16;
 const MAX_LINES = 3;
 const CHAR_WIDTH_PX = 7;
 const LINE_HEIGHT_PX = 13;
@@ -39,23 +39,53 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 /**
- * テキストを`maxCharsPerLine`ごとに折り返し、`maxLines`を超える場合は末尾を省略記号で切り詰める。
- * 空文字列を渡された場合は1行の空文字列を返す(呼び出し側で0行を特別扱いしなくてよいように)。
+ * テキストを単語(スペース)境界優先で`maxCharsPerLine`ごとに折り返し、`maxLines`を超える場合は
+ * 最終行を省略記号で切り詰める。1単語が1行に収まらない場合のみ文字単位でハードブレークする。
+ * 空文字列/空白のみを渡された場合は1行の空文字列を返す(呼び出し側で0行を特別扱いしなくてよいように)。
  */
 export function wrapThoughtText(
   text: string,
   maxCharsPerLine: number = MAX_CHARS_PER_LINE,
   maxLines: number = MAX_LINES,
 ): string[] {
-  const totalMaxChars = maxCharsPerLine * maxLines;
-  const truncated = text.length > totalMaxChars;
-  const source = truncated ? `${text.slice(0, Math.max(totalMaxChars - 1, 0))}…` : text;
+  const words = text.split(/\s+/).filter((word) => word.length > 0);
+  if (words.length === 0) return [""];
 
   const lines: string[] = [];
-  for (let i = 0; i < source.length; i += maxCharsPerLine) {
-    lines.push(source.slice(i, i + maxCharsPerLine));
+  let current = "";
+  const flush = () => {
+    if (current.length > 0) {
+      lines.push(current);
+      current = "";
+    }
+  };
+
+  for (const word of words) {
+    let remaining = word;
+    // 1行に収まらない長い単語は文字単位でハードブレークする。
+    while (remaining.length > maxCharsPerLine) {
+      flush();
+      lines.push(remaining.slice(0, maxCharsPerLine));
+      remaining = remaining.slice(maxCharsPerLine);
+    }
+    if (current.length === 0) {
+      current = remaining;
+    } else if (current.length + 1 + remaining.length <= maxCharsPerLine) {
+      current += ` ${remaining}`;
+    } else {
+      flush();
+      current = remaining;
+    }
   }
-  return lines.length > 0 ? lines : [""];
+  flush();
+
+  if (lines.length <= maxLines) return lines.length > 0 ? lines : [""];
+
+  const kept = lines.slice(0, maxLines);
+  const last = kept[maxLines - 1];
+  kept[maxLines - 1] =
+    last.length >= maxCharsPerLine ? `${last.slice(0, Math.max(maxCharsPerLine - 1, 0))}…` : `${last}…`;
+  return kept;
 }
 
 export type ThoughtBubbleLayoutInput = {

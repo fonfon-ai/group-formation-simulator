@@ -47,14 +47,14 @@ describe("EventLog", () => {
   it("shows the empty message when there is no log or speech history", () => {
     const html = render(makeState({}));
 
-    expect(html).toContain("まだイベントはありません");
+    expect(html).toContain("No events yet");
   });
 
   it("renders state log messages as before", () => {
-    const log: LogEntry[] = [{ tick: 1, message: "00:03 参加者が集まり始めた", tags: ["simulation"] }];
+    const log: LogEntry[] = [{ tick: 1, message: "00:03 The participants are gathering", tags: ["simulation"] }];
     const html = render(makeState({ log }));
 
-    expect(html).toContain("00:03 参加者が集まり始めた");
+    expect(html).toContain("00:03 The participants are gathering");
   });
 
   it("renders speech log entries with a speech-specific class and structured meta line", () => {
@@ -69,8 +69,8 @@ describe("EventLog", () => {
     const html = render(makeState({ agents: [founder], speechLog: [event] }));
 
     expect(html).toContain("event-log-entry--speech");
-    expect(html).toContain("Aさん");
-    expect(html).toContain("もう一軒行く?");
+    expect(html).toContain("A said");
+    expect(html).toContain("Shall we go somewhere next?");
     expect(html).toContain("intent: invite");
     expect(html).toContain("reason: initiativeFormedCore");
   });
@@ -91,7 +91,7 @@ describe("EventLog", () => {
     const html = render(makeState({ agents: [founder], log, speechLog: [event] }));
 
     const tick1Index = html.indexOf("tick1 state entry");
-    const speechIndex = html.indexOf("もう一軒行く?");
+    const speechIndex = html.indexOf("Shall we go somewhere next?");
     const tick5Index = html.indexOf("tick5 state entry");
 
     expect(tick1Index).toBeGreaterThanOrEqual(0);
@@ -99,10 +99,10 @@ describe("EventLog", () => {
     expect(tick5Index).toBeGreaterThan(speechIndex);
   });
 
-  it("offers a '発言のみ' filter option in the select", () => {
+  it("offers a 'Speech only' filter option in the select", () => {
     const html = render(makeState({}));
 
-    expect(html).toContain("発言のみ");
+    expect(html).toContain("Speech only");
   });
 
   it("uses a single compact <select> for filtering (mobile-friendly, no button row)", () => {
@@ -111,10 +111,10 @@ describe("EventLog", () => {
     expect((html.match(/<select/g) ?? []).length).toBe(1);
   });
 
-  it("offers a '発言効果のみ' filter option in the select", () => {
+  it("offers a 'Speech effects only' filter option in the select", () => {
     const html = render(makeState({}));
 
-    expect(html).toContain("発言効果のみ");
+    expect(html).toContain("Speech effects only");
   });
 
   it("renders speechInterpretationLog entries with a speech-effect class, distinct from speech rows", () => {
@@ -140,8 +140,7 @@ describe("EventLog", () => {
     );
 
     expect(html).toContain("event-log-entry--speech-effect");
-    expect(html).toContain("Observerさんの解釈");
-    expect(html).toContain("好意的");
+    expect(html).toContain("interpretation: Positive");
   });
 
   it("renders speechEffectLog entries with the dimension and duration", () => {
@@ -169,7 +168,7 @@ describe("EventLog", () => {
     );
 
     expect(html).toContain("event-log-entry--speech-effect");
-    expect(html).toContain("接近確率");
-    expect(html).toContain("持続5tick");
+    expect(html).toContain("approach probability");
+    expect(html).toContain("lasts 5 ticks");
   });
 });

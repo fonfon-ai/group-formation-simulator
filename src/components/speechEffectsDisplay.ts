@@ -20,10 +20,10 @@ import { resolveLabel } from "./speechDisplay";
  */
 
 const DIMENSION_LABEL: Record<SpeechEffectDimension, string> = {
-  stress: "ストレス蓄積率",
-  attractiveness: "輪の魅力度",
-  approachProbability: "接近確率",
-  leaveThreshold: "離脱しきい値",
+  stress: "stress accumulation rate",
+  attractiveness: "circle attractiveness",
+  approachProbability: "approach probability",
+  leaveThreshold: "leave threshold",
 };
 
 export function speechEffectDimensionLabel(dimension: SpeechEffectDimension): string {
@@ -31,9 +31,9 @@ export function speechEffectDimensionLabel(dimension: SpeechEffectDimension): st
 }
 
 const VALENCE_LABEL: Record<SpeechInterpretationValence, string> = {
-  positive: "好意的",
-  neutral: "中立(効果なし)",
-  negative: "否定的",
+  positive: "Positive",
+  neutral: "Neutral (no effect)",
+  negative: "Negative",
 };
 
 export function speechInterpretationValenceLabel(valence: SpeechInterpretationValence): string {
@@ -41,14 +41,14 @@ export function speechInterpretationValenceLabel(valence: SpeechInterpretationVa
 }
 
 const FACTOR_LABEL: Record<SpeechInterpretationFactor["key"], string> = {
-  intentBase: "発言の基礎方向",
-  conformity: "同調傾向",
-  influenceAvoidance: "影響回避度",
-  relationshipTrust: "関係性への信頼",
-  receiverStress: "受け手のストレス",
-  receiverState: "受け手の状態",
-  receptionRelation: "宛先(対象/周囲)",
-  strength: "発言の強さ",
+  intentBase: "Base direction of the speech",
+  conformity: "Conformity",
+  influenceAvoidance: "Influence avoidance",
+  relationshipTrust: "Trust in the relationship",
+  receiverStress: "Receiver's stress",
+  receiverState: "Receiver's state",
+  receptionRelation: "Destination (target/nearby)",
+  strength: "Strength of the speech",
 };
 
 export function speechInterpretationFactorLabel(key: SpeechInterpretationFactor["key"]): string {
@@ -66,10 +66,10 @@ function formatSigned(value: number, digits = 3): string {
 /** 認知(`SpeechReceptionEvent`)を1行で読める文言にする。heard/非heardの両方を扱う */
 export function formatReceptionLine(reception: SpeechReceptionEvent, labelById: Map<string, string>): string {
   const receiver = resolveLabel(reception.receiverId, labelById);
-  const distanceText = `距離${formatNumber(reception.distance, 1)} / 可聴閾値${formatNumber(reception.threshold, 1)}`;
+  const distanceText = `distance ${formatNumber(reception.distance, 1)} / audible threshold ${formatNumber(reception.threshold, 1)}`;
   return reception.heard
-    ? `${formatTick(reception.tick)} ${receiver}さんに届いた(${distanceText})`
-    : `${formatTick(reception.tick)} ${receiver}さんには届かなかった(圏外: ${distanceText})`;
+    ? `${formatTick(reception.tick)} reached ${receiver} (${distanceText})`
+    : `${formatTick(reception.tick)} did not reach ${receiver} (out of range: ${distanceText})`;
 }
 
 /** 解釈(`SpeechInterpretationEvent`)を1行で読める文言にする */
@@ -77,36 +77,36 @@ export function formatInterpretationLine(interpretation: SpeechInterpretationEve
   const receiver = resolveLabel(interpretation.receiverId, labelById);
   const valence = speechInterpretationValenceLabel(interpretation.valence);
   const intensity = Math.round(interpretation.intensity * 100);
-  return `${formatTick(interpretation.tick)} ${receiver}さんの解釈: ${valence}(強度${intensity}%)`;
+  return `${formatTick(interpretation.tick)} ${receiver}'s interpretation: ${valence} (intensity ${intensity}%)`;
 }
 
 /** 解釈のfactor内訳1件分を1行で読める文言にする */
 export function formatInterpretationFactorLine(factor: SpeechInterpretationFactor): string {
   const label = speechInterpretationFactorLabel(factor.key);
-  return `${label}: 入力値${formatNumber(factor.rawValue)} → 寄与係数${formatNumber(factor.contribution)}`;
+  return `${label}: input ${formatNumber(factor.rawValue)} → contribution ${formatNumber(factor.contribution)}`;
 }
 
 /** 効果(`SpeechEffectEvent`)を1行で読める文言にする */
 export function formatEffectLine(effect: SpeechEffectEvent, labelById: Map<string, string>): string {
   const receiver = resolveLabel(effect.receiverId, labelById);
   const dimension = speechEffectDimensionLabel(effect.dimension);
-  return `${formatTick(effect.occurredTick)} ${receiver}さんの${dimension}へ${formatSigned(effect.outputValue)}の効果(持続${effect.durationTicks}tick)`;
+  return `${formatTick(effect.occurredTick)} effect of ${formatSigned(effect.outputValue)} on ${receiver}'s ${dimension} (lasts ${effect.durationTicks} ticks)`;
 }
 
 /** 現在の適用状況(`ObserverActiveEffectStatus`)を1行で読める文言にする。既に失効/置換済みの場合も明示する */
 export function formatActiveEffectStatusLine(status: ObserverActiveEffectStatus | undefined): string {
-  if (!status) return "現在は作用していない(失効済み、または同一話者の再発言により更新済み)";
-  return `現在値${formatSigned(status.currentStrength)}(初期値${formatSigned(status.initialStrength)}) / 残り${status.remainingTicks}tick`;
+  if (!status) return "Not currently active (expired, or superseded by the same speaker's later speech)";
+  return `current ${formatSigned(status.currentStrength)} (initial ${formatSigned(status.initialStrength)}) / ${status.remainingTicks} ticks left`;
 }
 
 /** 集約結果(`AggregatedActiveEffect`)を1行で読める文言にする */
 export function formatAggregatedEffectSummary(summary: AggregatedActiveEffect): string {
-  const target = summary.targetGroupId ? `(対象輪: ${summary.targetGroupId})` : "";
-  return `${speechEffectDimensionLabel(summary.dimension)}${target}: 集約値${formatSigned(summary.value)}`;
+  const target = summary.targetGroupId ? ` (target circle: ${summary.targetGroupId})` : "";
+  return `${speechEffectDimensionLabel(summary.dimension)}${target}: aggregate ${formatSigned(summary.value)}`;
 }
 
 /** 集約結果1件分の個別寄与(`ActiveEffectContribution`)を1行で読める文言にする */
 export function formatContributionLine(contribution: ActiveEffectContribution, labelById: Map<string, string>): string {
   const speaker = resolveLabel(contribution.speakerId, labelById);
-  return `speechEventId=${contribution.speechEventId} / 話者=${speaker} / intent=${contribution.intent} / 値=${formatSigned(contribution.value)}`;
+  return `speechEventId=${contribution.speechEventId} / speaker=${speaker} / intent=${contribution.intent} / value=${formatSigned(contribution.value)}`;
 }

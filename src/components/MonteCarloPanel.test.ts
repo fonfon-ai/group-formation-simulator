@@ -66,7 +66,7 @@ describe("MonteCarloPanel", () => {
       }),
     );
 
-    expect(html).toContain("現在の条件でMonte Carloを実行すると、確率的傾向を確認できます。");
+    expect(html).toContain("Run Monte Carlo on the current conditions to see the probabilistic tendencies.");
     expect(html).not.toContain("monte-carlo-stale");
   });
 
@@ -82,6 +82,6 @@ describe("MonteCarloPanel", () => {
       }),
     );
 
-    expect(html).toContain("単発シミュレーションは一時停止します");
+    expect(html).toContain("Running this will pause the single simulation");
   });
 });

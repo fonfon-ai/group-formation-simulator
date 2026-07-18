@@ -41,18 +41,18 @@ describe("buildAgentLabelMap", () => {
 });
 
 describe("speechIntentLabel", () => {
-  it("maps every SpeechIntent to a Japanese label", () => {
-    expect(speechIntentLabel("invite")).toBe("誘う");
-    expect(speechIntentLabel("welcome")).toBe("歓迎");
-    expect(speechIntentLabel("greet")).toBe("挨拶");
-    expect(speechIntentLabel("decline")).toBe("辞退");
+  it("maps every SpeechIntent to a display label", () => {
+    expect(speechIntentLabel("invite")).toBe("Invite");
+    expect(speechIntentLabel("welcome")).toBe("Welcome");
+    expect(speechIntentLabel("greet")).toBe("Greet");
+    expect(speechIntentLabel("decline")).toBe("Decline");
   });
 });
 
 describe("formatSpeechDestination", () => {
   const labelById = buildAgentLabelMap([makeAgent({ id: "target-1", label: "B" })]);
 
-  it("resolves a targeted (1:1) speech event to '<label>さんへ'", () => {
+  it("resolves a targeted (1:1) speech event to 'to <label>'", () => {
     const event = createSpeechEvent({
       tick: 1,
       speakerId: "speaker-1",
@@ -61,7 +61,7 @@ describe("formatSpeechDestination", () => {
       target: "target-1",
     });
 
-    expect(formatSpeechDestination(event, labelById)).toBe("Bさんへ");
+    expect(formatSpeechDestination(event, labelById)).toBe("to B");
   });
 
   it("falls back to the raw id when the target has no known label", () => {
@@ -73,10 +73,10 @@ describe("formatSpeechDestination", () => {
       target: "unknown-id",
     });
 
-    expect(formatSpeechDestination(event, labelById)).toBe("unknown-idさんへ");
+    expect(formatSpeechDestination(event, labelById)).toBe("to unknown-id");
   });
 
-  it("resolves a nearby-audience speech event to '周囲へ'", () => {
+  it("resolves a nearby-audience speech event to 'to those nearby'", () => {
     const event = createSpeechEvent({
       tick: 1,
       speakerId: "speaker-1",
@@ -85,7 +85,7 @@ describe("formatSpeechDestination", () => {
       audience: "nearby",
     });
 
-    expect(formatSpeechDestination(event, labelById)).toBe("周囲へ");
+    expect(formatSpeechDestination(event, labelById)).toBe("to those nearby");
   });
 });
 
@@ -104,11 +104,11 @@ describe("formatSpeechLogMessage", () => {
 
     const message = formatSpeechLogMessage(event, labelById);
 
-    expect(message).toContain("Aさん");
-    expect(message).toContain("もう一軒行く?");
-    expect(message).toContain("周囲へ");
-    expect(message).toContain("誘う");
-    expect(message).toBe('00:15 Aさんが周囲へ「もう一軒行く?」と発言(誘う)');
+    expect(message).toContain("A said");
+    expect(message).toContain("Shall we go somewhere next?");
+    expect(message).toContain("to those nearby");
+    expect(message).toContain("Invite");
+    expect(message).toBe('00:15 A said to those nearby: "Shall we go somewhere next?" (Invite)');
   });
 });
 

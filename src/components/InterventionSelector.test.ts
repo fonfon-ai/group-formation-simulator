@@ -27,8 +27,8 @@ describe("InterventionSelector", () => {
       }),
     );
 
-    expect(html).toContain("場の設計に対する介入を何も行わない");
-    expect(html).not.toContain("期待される効果");
+    expect(html).toContain("No intervention is made to the setting");
+    expect(html).not.toContain("Expected effect");
   });
 
   it("shows the description, expected effect, and likely metrics for a selected scenario", () => {
@@ -39,8 +39,8 @@ describe("InterventionSelector", () => {
       }),
     );
 
-    expect(html).toContain("observerJoinerへの軽い声かけ");
-    expect(html).toContain("期待される効果");
-    expect(html).toContain("効きやすい観察指標");
+    expect(html).toContain("A gentle nudge to the observerJoiner");
+    expect(html).toContain("Expected effect");
+    expect(html).toContain("Metrics it tends to move");
   });
 });

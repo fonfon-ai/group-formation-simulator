@@ -7,13 +7,13 @@ import { formatEffectLine, formatInterpretationFactorLine, formatInterpretationL
 type FilterKey = "all" | "observerJoiner" | "nucleus" | "groupConfirmed" | "leave" | "speech" | "speechEffect";
 
 const FILTERS: Array<{ key: FilterKey; label: string; tag?: LogTag }> = [
-  { key: "all", label: "全ログ" },
-  { key: "observerJoiner", label: "observerJoinerのみ", tag: "observerJoiner" },
-  { key: "nucleus", label: "核形成イベントのみ", tag: "nucleus" },
-  { key: "groupConfirmed", label: "グループ成立イベントのみ", tag: "groupConfirmed" },
-  { key: "leave", label: "離脱イベントのみ", tag: "leave" },
-  { key: "speech", label: "発言のみ" },
-  { key: "speechEffect", label: "発言効果のみ" },
+  { key: "all", label: "All events" },
+  { key: "observerJoiner", label: "observerJoiner only", tag: "observerJoiner" },
+  { key: "nucleus", label: "Core-forming events only", tag: "nucleus" },
+  { key: "groupConfirmed", label: "Group-confirmed events only", tag: "groupConfirmed" },
+  { key: "leave", label: "Leave events only", tag: "leave" },
+  { key: "speech", label: "Speech only" },
+  { key: "speechEffect", label: "Speech effects only" },
 ];
 
 // 発言効果(解釈/効果)の行が一度に大量になっても操作を妨げないよう、既定では末尾からこの件数だけ表示する
@@ -110,10 +110,10 @@ export function EventLog({ state }: Props) {
 
   return (
     <div className="panel event-log">
-      <h2>状態ログ</h2>
+      <h2>Event log</h2>
       <div className="event-log-filters">
         <label className="event-log-filter-label" htmlFor="event-log-filter-select">
-          表示:
+          Show:
         </label>
         <select
           id="event-log-filter-select"
@@ -130,16 +130,16 @@ export function EventLog({ state }: Props) {
       </div>
       {isTruncated && (
         <p className="event-log-truncation-notice">
-          直近{ROW_DISPLAY_LIMIT}件のみ表示中(全{filteredRows.length}件)。
+          Showing only the latest {ROW_DISPLAY_LIMIT} of {filteredRows.length}.
           <button type="button" className="event-log-show-all-button" onClick={() => setShowAllRows(true)}>
-            すべて表示
+            Show all
           </button>
         </p>
       )}
       <div className="event-log-list" ref={listRef}>
         {visibleRows.length === 0 && (
           <p className="event-log-empty">
-            {timeline.length === 0 ? "まだイベントはありません。" : "該当するログはありません。"}
+            {timeline.length === 0 ? "No events yet." : "No matching log entries."}
           </p>
         )}
         {visibleRows.map((row) =>
@@ -152,7 +152,7 @@ export function EventLog({ state }: Props) {
             <div key={row.key} className="event-log-entry event-log-entry--speech-effect">
               <div className="event-log-entry-message">🧠 {row.message}</div>
               <details className="event-log-entry-meta-details">
-                <summary>解釈のfactor内訳</summary>
+                <summary>Interpretation factor breakdown</summary>
                 <div className="event-log-entry-meta">{row.meta}</div>
               </details>
             </div>

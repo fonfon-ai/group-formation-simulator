@@ -17,8 +17,8 @@ describe("InterventionComparisonPanel", () => {
       }),
     );
 
-    expect(html).toContain("「介入なし」が選択されているため比較できません");
-    expect(html).not.toContain("介入なしと比較して実行");
+    expect(html).toContain("nothing to compare");
+    expect(html).not.toContain("Compare against no intervention");
   });
 
   it("renders the empty state prompt before any comparison has been executed", () => {
@@ -33,8 +33,8 @@ describe("InterventionComparisonPanel", () => {
       }),
     );
 
-    expect(html).toContain("介入なしと比較して実行");
-    expect(html).toContain("を同一条件");
+    expect(html).toContain("Compare against no intervention");
+    expect(html).toContain("under identical");
     expect(html).not.toContain("monte-carlo-stale");
   });
 
@@ -50,6 +50,6 @@ describe("InterventionComparisonPanel", () => {
       }),
     );
 
-    expect(html).toContain("単発シミュレーションは一時停止します");
+    expect(html).toContain("Running this will pause the single simulation");
   });
 });

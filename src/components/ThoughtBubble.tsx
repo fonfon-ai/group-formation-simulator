@@ -7,13 +7,13 @@ type Props = {
 };
 
 /**
- * `intent`ラベル(1文字目)を全角括弧で囲み、複数行にまたがる場合も開き括弧は先頭行、
- * 閉じ括弧は最終行にのみ付与する。括弧付き表示は「これは(発言ではなく)心の声である」ことを
- * 色やアイコンに頼らず伝えるための、視覚以外の手がかり。
+ * テキストを括弧で囲み、複数行にまたがる場合も開き括弧は先頭行、閉じ括弧は最終行にのみ付与する。
+ * 括弧付き表示は「これは(発言ではなく)心の声である」ことを色やアイコンに頼らず伝えるための、
+ * 視覚以外の手がかり。
  */
 function bracketedLine(line: string, index: number, totalLines: number): string {
-  const withOpen = index === 0 ? `（${line}` : line;
-  return index === totalLines - 1 ? `${withOpen}）` : withOpen;
+  const withOpen = index === 0 ? `(${line}` : line;
+  return index === totalLines - 1 ? `${withOpen})` : withOpen;
 }
 
 const TEXT_LINE_HEIGHT = 13;

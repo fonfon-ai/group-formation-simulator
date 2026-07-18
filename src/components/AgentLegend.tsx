@@ -1,16 +1,16 @@
 const ITEMS: Array<{ color: string; label: string }> = [
-  { color: "#9ca3af", label: "gray: 未定" },
-  { color: "#3b82f6", label: "blue: 二次会に向かう意思が強まりつつある" },
-  { color: "#22c55e", label: "green: 輪/グループに合流済み(形成中の輪 or 成立済みグループ)" },
-  { color: "#ef4444", label: "red: 帰宅方向" },
-  { color: "#a855f7", label: "purple: 主導者・核を作っている人" },
-  { color: "#f97316", label: "orange: observerJoiner型(注目対象)" },
+  { color: "#9ca3af", label: "gray: undecided" },
+  { color: "#3b82f6", label: "blue: leaning toward going on to a next round" },
+  { color: "#22c55e", label: "green: joined a circle/group (forming circle or confirmed group)" },
+  { color: "#ef4444", label: "red: heading home" },
+  { color: "#a855f7", label: "purple: leader / person forming a core" },
+  { color: "#f97316", label: "orange: observerJoiner type (the one to watch)" },
 ];
 
 export function AgentLegend() {
   return (
     <div className="panel legend">
-      <h2>凡例</h2>
+      <h2>Legend</h2>
       <ul>
         {ITEMS.map((item) => (
           <li key={item.label}>
@@ -20,8 +20,8 @@ export function AgentLegend() {
         ))}
       </ul>
       <p className="legend-note">
-        円が大きいほど主導性が高い人です。オレンジの太枠は observerJoiner
-        型(行きたいが自分の意思で場を動かしたくない人)を示します。
+        The larger the circle, the more initiative that person has. A thick orange
+        outline marks the observerJoiner type (someone who wants to go but doesn't want to move the room themselves).
       </p>
     </div>
   );

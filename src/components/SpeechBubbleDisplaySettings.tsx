@@ -14,10 +14,10 @@ type Props = {
 export function SpeechBubbleDisplaySettings({ settings, onSettingsChange }: Props) {
   return (
     <div className="panel speech-bubble-display-settings">
-      <h2>発言表示</h2>
+      <h2>Speech</h2>
       <p className="speech-bubble-display-note">
-        「発言」は他のエージェントへ向けて実際に発せられたセリフです。
-        この表示設定を変えてもシミュレーションの結果は変わりません。
+        A "speech" is a line actually spoken toward other agents.
+        Changing this display setting does not change the simulation result.
       </p>
 
       <label className="field speech-bubble-display-toggle">
@@ -26,7 +26,7 @@ export function SpeechBubbleDisplaySettings({ settings, onSettingsChange }: Prop
           checked={settings.enabled}
           onChange={(e) => onSettingsChange({ ...settings, enabled: e.target.checked })}
         />
-        <span>発言吹き出しを表示する</span>
+        <span>Show speech bubbles</span>
       </label>
     </div>
   );

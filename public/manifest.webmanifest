@@ -1,8 +1,8 @@
 {
-  "name": "グループ形成過程シミュレーター",
+  "name": "Group Formation Simulator",
   "short_name": "UGS",
-  "description": "曖昧な社会的移行の場面で非公式グループが形成される過程を可視化するエージェントベースシミュレーター",
-  "lang": "ja",
+  "description": "An agent-based simulator that visualizes how informal groups form during an ambiguous social transition.",
+  "lang": "en",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

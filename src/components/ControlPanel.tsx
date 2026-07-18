@@ -59,7 +59,7 @@ export function ControlPanel({
 
   return (
     <div className="panel control-panel">
-      <h2>操作パネル</h2>
+      <h2>Controls</h2>
       <div className="control-buttons">
         <button type="button" onClick={onStartPause}>
           {running ? "Pause" : "Start"}
@@ -82,7 +82,7 @@ export function ControlPanel({
       </label>
 
       <label className="field">
-        <span>シナリオプリセット</span>
+        <span>Scenario preset</span>
         <select value={presetId} onChange={(e) => onPresetChange(e.target.value)}>
           {PRESETS.map((preset) => (
             <option key={preset.id} value={preset.id}>
@@ -97,13 +97,13 @@ export function ControlPanel({
 
       {hasPendingResetChanges && (
         <p className="reset-required-banner">
-          一部の変更はReset後に反映されます
+          Some changes take effect only after Reset
         </p>
       )}
 
       {collapseSliders ? (
         <details className="sliders-details">
-          <summary>詳細パラメータ</summary>
+          <summary>Advanced parameters</summary>
           {sliders}
         </details>
       ) : (

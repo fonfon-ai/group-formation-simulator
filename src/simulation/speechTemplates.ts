@@ -10,13 +10,13 @@ import type { SpeechEvent, SpeechReason } from "./speech";
  * `expressionTemplates.ts`と同様の決定的選択方式を追加すること。
  */
 const TEMPLATES: Record<SpeechReason, string> = {
-  initiativeFormedCore: "もう一軒行く?",
-  cliqueFormedCore: "もう一軒行く?",
-  formingGroupRecruitment: "こっちも一緒にどう?",
-  approachWelcome: "おいでおいで、こっちだよ",
-  joinGreeting: "合流できた、よろしく!",
-  leaveDeclaration: "今日はここで帰るね、また今度!",
-  lightObserverInvitation: "よかったら一緒に行く?",
+  initiativeFormedCore: "Shall we go somewhere next?",
+  cliqueFormedCore: "Shall we go somewhere next?",
+  formingGroupRecruitment: "Want to join us over here?",
+  approachWelcome: "Come on over, this way!",
+  joinGreeting: "Made it — good to be here!",
+  leaveDeclaration: "I'll head home for today — see you next time!",
+  lightObserverInvitation: "Want to come along with us?",
 };
 
 /** `reason`から実際の発言文言を解決する */

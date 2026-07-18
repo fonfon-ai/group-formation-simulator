@@ -37,9 +37,9 @@ const TICK_INTERVAL_MS = 250;
 const INITIAL_SEED = 12345;
 
 const INTRO_TEXT =
-  "このプロトタイプは、二次会に行くかどうかがその場の空気で決まるような、曖昧な移行場面での" +
-  "グループ形成過程を可視化します。オレンジ色のエージェントは" +
-  "「行きたいが、自分の意思で場を動かしたくない人 (observerJoiner)」です。";
+  "This prototype visualizes how a group forms during an ambiguous transition moment — " +
+  "the kind where whether to go on to a next round is decided by the mood of the room. " +
+  "The orange agents are people who want to go but don't want to move the room themselves (observerJoiner).";
 
 function App() {
   const isMobile = useIsMobile();
@@ -164,20 +164,20 @@ function App() {
   return (
     <div className="app-root">
       <header className="app-header">
-        <h1>グループ形成過程シミュレーター</h1>
+        <h1>Group Formation Simulator</h1>
         {isMobile ? (
           <details className="app-intro-details">
-            <summary>このシミュレーターについて</summary>
+            <summary>About this simulator</summary>
             <p>{INTRO_TEXT}</p>
           </details>
         ) : (
           <p>{INTRO_TEXT}</p>
         )}
         <p className="tick-status">
-          Tick: {simState.tick} {simState.finished ? "(終了)" : running ? "(実行中)" : "(一時停止)"}
+          Tick: {simState.tick} {simState.finished ? "(finished)" : running ? "(running)" : "(paused)"}
         </p>
         <p className="current-condition">
-          プリセット: {getPresetById(presetId).name} / seed: {seed} / 介入:{" "}
+          Preset: {getPresetById(presetId).name} / seed: {seed} / Intervention:{" "}
           {getInterventionById(interventionId).name}
         </p>
       </header>

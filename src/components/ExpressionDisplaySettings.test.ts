@@ -13,23 +13,23 @@ function render(settings: ExpressionDisplaySettingsState) {
 describe("ExpressionDisplaySettings", () => {
   it("renders the non-intervention note and an enabled checkbox by default", () => {
     const html = render(DEFAULT_EXPRESSION_DISPLAY_SETTINGS);
-    expect(html).toContain("結果は変わりません");
+    expect(html).toContain("does not change the simulation result");
     expect(html).toContain('type="checkbox"');
     expect(html).toContain("checked=\"\"");
   });
 
   it("shows target and density selects while enabled", () => {
     const html = render(DEFAULT_EXPRESSION_DISPLAY_SETTINGS);
-    expect(html).toContain("observerJoinerのみ");
-    expect(html).toContain("重要イベントのみ");
-    expect(html).toContain("少なめ");
-    expect(html).toContain("多め");
+    expect(html).toContain("observerJoiner only");
+    expect(html).toContain("Important events only");
+    expect(html).toContain("Fewer");
+    expect(html).toContain("More");
   });
 
   it("hides the target/density selects and shows an unchecked checkbox when disabled", () => {
     const html = render({ ...DEFAULT_EXPRESSION_DISPLAY_SETTINGS, enabled: false });
-    expect(html).not.toContain("observerJoinerのみ");
-    expect(html).not.toContain("表示密度");
+    expect(html).not.toContain("observerJoiner only");
+    expect(html).not.toContain("Density");
     expect(html).not.toContain("checked=\"\"");
   });
 

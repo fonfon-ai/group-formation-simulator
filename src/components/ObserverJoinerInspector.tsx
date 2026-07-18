@@ -26,26 +26,26 @@ type Props = {
 };
 
 const SPEECH_RELATION_LABEL: Record<SpeechRelation, string> = {
-  speaker: "話者",
-  target: "対象",
-  audience: "周囲",
+  speaker: "Speaker",
+  target: "Target",
+  audience: "Nearby",
 };
 
 const AGENT_STATE_LABEL: Record<AgentState, string> = {
-  undecided: "未定",
-  forming: "輪を形成中",
-  approaching: "接近中",
-  joined: "参加済み",
-  leaving: "離脱中",
-  left: "離脱済み",
+  undecided: "Undecided",
+  forming: "Forming a circle",
+  approaching: "Approaching",
+  joined: "Joined",
+  leaving: "Leaving",
+  left: "Left",
 };
 
 const GROUP_STATUS_LABEL: Record<GroupCandidateStatus, string> = {
-  forming: "形成中",
-  confirmed: "成立済み",
-  dissolving: "解散中",
-  dissolved: "解散済み",
-  expired: "期限切れ",
+  forming: "Forming",
+  confirmed: "Confirmed",
+  dissolving: "Dissolving",
+  dissolved: "Dissolved",
+  expired: "Expired",
 };
 
 // leaveMarginがこの値を下回ったら、まだ離脱していなくても注意表示にする
@@ -74,27 +74,27 @@ function SpeechEffectDetailBlock({
   if (!detail.reception && !detail.interpretation && !detail.effect) {
     return (
       <p className="observer-inspector-effect-empty">
-        発言効果の記録なし(Phase 3効果が無効、またはこのagentが認知対象になっていない)
+        No speech-effect record (Phase 3 effects disabled, or this agent wasn't in reception range)
       </p>
     );
   }
 
   return (
     <details className="observer-inspector-effect-details">
-      <summary>発言効果の詳細</summary>
+      <summary>Speech-effect details</summary>
 
       {detail.reception ? (
         <div className="observer-inspector-effect-line">{formatReceptionLine(detail.reception, labelById)}</div>
       ) : (
-        <div className="observer-inspector-effect-line">認知記録なし</div>
+        <div className="observer-inspector-effect-line">No reception record</div>
       )}
 
       {detail.reception && !detail.reception.heard && (
-        <p className="observer-inspector-effect-reason">非認知理由: 圏外({detail.reception.reason})</p>
+        <p className="observer-inspector-effect-reason">Reason not heard: out of range ({detail.reception.reason})</p>
       )}
 
       {detail.reception?.heard && !detail.interpretation && (
-        <p className="observer-inspector-effect-reason">届いたが解釈記録なし</p>
+        <p className="observer-inspector-effect-reason">Heard, but no interpretation record</p>
       )}
 
       {detail.interpretation && (
@@ -109,7 +109,7 @@ function SpeechEffectDetailBlock({
       )}
 
       {detail.interpretation && detail.interpretation.valence === "neutral" && !detail.effect && (
-        <p className="observer-inspector-effect-reason">解釈が中立だったため効果は発生しなかった</p>
+        <p className="observer-inspector-effect-reason">The interpretation was neutral, so no effect occurred</p>
       )}
 
       {detail.effect && (
@@ -155,7 +155,7 @@ function ActiveEffectSummaryList({
   labelById: Map<string, string>;
 }) {
   if (summaries.length === 0) {
-    return <p className="observer-inspector-speech-empty">現在作用中の発言効果はありません。</p>;
+    return <p className="observer-inspector-speech-empty">No speech effects are currently active.</p>;
   }
   return (
     <div className="observer-inspector-speech-list">
@@ -179,7 +179,7 @@ function ActiveEffectSummaryList({
           {summary.duplicateContributions.length > 0 && (
             <ul className="observer-inspector-factor-list">
               {summary.duplicateContributions.map((c) => (
-                <li key={c.speechActiveEffectId}>(重複・不採用) {formatContributionLine(c, labelById)}</li>
+                <li key={c.speechActiveEffectId}>(duplicate, not applied) {formatContributionLine(c, labelById)}</li>
               ))}
             </ul>
           )}
@@ -227,10 +227,10 @@ function InspectionCard({
         <span>{formatRatio(inspection.leaveThreshold)}</span>
       </div>
       <div className={`observer-inspector-row${isNearLeaving ? " observer-inspector-row--warning" : ""}`}>
-        <span>離脱までの余裕</span>
+        <span>margin before leaving</span>
         <span>
           {formatRatio(inspection.leaveMargin)}
-          {isNearLeaving ? " ⚠ 離脱間近" : ""}
+          {isNearLeaving ? " ⚠ about to leave" : ""}
         </span>
       </div>
 
@@ -247,26 +247,26 @@ function InspectionCard({
             <span>{GROUP_STATUS_LABEL[inspection.nearestGroupStatus as GroupCandidateStatus]}</span>
           </div>
           <div className="observer-inspector-row">
-            <span>nearest group人数</span>
+            <span>nearest group size</span>
             <span>{inspection.nearestGroupMemberCount}</span>
           </div>
           <div className="observer-inspector-row">
-            <span>nearest group距離</span>
+            <span>nearest group distance</span>
             <span>{formatDistance(inspection.nearestGroupDistance as number)}</span>
           </div>
           <div className="observer-inspector-row">
-            <span>attractiveness(適用後)</span>
+            <span>attractiveness (after effects)</span>
             <span>{formatRatio(inspection.attractivenessScore as number)}</span>
           </div>
           {inspection.attractivenessScoreBeforeEffects !== undefined &&
             inspection.attractivenessScoreBeforeEffects !== inspection.attractivenessScore && (
               <>
                 <div className="observer-inspector-row">
-                  <span>attractiveness(適用前)</span>
+                  <span>attractiveness (before effects)</span>
                   <span>{formatRatio(inspection.attractivenessScoreBeforeEffects)}</span>
                 </div>
                 <div className="observer-inspector-row">
-                  <span>うち発言効果による補正</span>
+                  <span>of which, speech-effect adjustment</span>
                   <span>
                     {formatRatio(
                       (inspection.attractivenessScore as number) - inspection.attractivenessScoreBeforeEffects,
@@ -279,17 +279,17 @@ function InspectionCard({
       ) : (
         <div className="observer-inspector-row">
           <span>nearest group</span>
-          <span>なし</span>
+          <span>none</span>
         </div>
       )}
 
       <div className="observer-inspector-divider" />
 
       <div className="observer-inspector-row observer-inspector-row--header">
-        <span>関連する発言</span>
+        <span>related speech</span>
       </div>
       {inspection.speechHistory.length === 0 ? (
-        <p className="observer-inspector-speech-empty">まだ関連する発言はありません。</p>
+        <p className="observer-inspector-speech-empty">No related speech yet.</p>
       ) : (
         <div className="observer-inspector-speech-list">
           {inspection.speechHistory.map((entry, i) => (
@@ -306,7 +306,7 @@ function InspectionCard({
       <div className="observer-inspector-divider" />
 
       <div className="observer-inspector-row observer-inspector-row--header">
-        <span>現在作用中の発言効果</span>
+        <span>Currently active speech effects</span>
       </div>
       <ActiveEffectSummaryList summaries={inspection.activeEffectSummaries} labelById={labelById} />
     </div>
@@ -319,9 +319,9 @@ export function ObserverJoinerInspector({ state, params }: Props) {
 
   return (
     <div className="panel observer-inspector">
-      <h2>observerJoinerインスペクター</h2>
+      <h2>observerJoiner inspector</h2>
       {inspections.length === 0 ? (
-        <p className="observer-inspector-empty">observerJoinerがいません。</p>
+        <p className="observer-inspector-empty">There is no observerJoiner.</p>
       ) : (
         inspections.map((inspection) => (
           <InspectionCard key={inspection.agentId} inspection={inspection} labelById={labelById} />

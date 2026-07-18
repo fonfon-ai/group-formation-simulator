@@ -18,51 +18,51 @@ type TemplateVariants = {
 
 const TEMPLATES: Record<ExpressionReason, TemplateVariants> = {
   initiativeFormedCore: {
-    general: ["よし、声をかけてみよう", "もう一軒、誘ってみるか"],
+    general: ["Alright, let me speak up", "Maybe I'll suggest a next round"],
   },
   cliqueFormedCore: {
-    general: ["いつものメンバーで集まろうか", "この面子ならもう一軒行けそうだ"],
+    general: ["Let's gather the usual crew", "With this crew we could go on"],
   },
   approachedFormingGroup: {
-    general: ["輪が見えてきた。近づいてみようかな", "あそこの輪、行ってみよう"],
+    general: ["A circle's forming — I'll head over", "That circle over there, let's go"],
   },
   approachedConfirmedGroup: {
-    general: ["もう決まってるグループに合流しよう", "あそこなら入れそうだ"],
+    general: ["I'll join that settled group", "Looks like I could get in there"],
   },
   arrivedAtFormingGroup: {
-    general: ["よし、輪に加われた", "無事に合流できた"],
-    observerJoiner: ["よかった、自然に入れた", "思ったより自然に加われた"],
+    general: ["Made it into the circle", "Joined up just fine"],
+    observerJoiner: ["Good, I slipped in naturally", "Easier to join than I expected"],
   },
   arrivedAtConfirmedGroup: {
-    general: ["グループに参加できた", "間に合ってよかった"],
-    observerJoiner: ["よかった、自然に入れた", "後からでも入れてよかった"],
+    general: ["Made it into the group", "Glad I got in on time"],
+    observerJoiner: ["Good, I slipped in naturally", "Glad I could still join late"],
   },
   ambiguityStressExceeded: {
-    general: ["今日はもう帰ろう", "これ以上待つのはやめておこう"],
-    observerJoiner: ["今日はもう帰ろう", "やっぱり今日はやめておこう"],
+    general: ["I'll head home for today", "No point waiting any longer"],
+    observerJoiner: ["I'll head home for today", "I'll pass this time after all"],
   },
   reachedScreenEdge: {
-    general: ["帰り道につく", "そのまま会場を後にした"],
+    general: ["Heading home now", "And off I went from the venue"],
   },
   receivedLightInvitation: {
-    general: ["声をかけてもらえた", "誘ってもらえて少しほっとした"],
-    observerJoiner: ["声をかけてもらえた", "誘ってもらえて少し気が楽になった"],
+    general: ["Someone reached out to me", "Nice to be invited — a little relief"],
+    observerJoiner: ["Someone reached out to me", "Being invited puts me a bit at ease"],
   },
   stressCrossedRisingThreshold: {
-    general: ["まだ決まらないのか…少し疲れてきた", "そろそろ長いな、と感じ始めた"],
-    observerJoiner: ["まだ決まらないのか…少し疲れてきた", "この空気、少し疲れるな"],
+    general: ["Still undecided… getting tired", "This is dragging on, I feel it"],
+    observerJoiner: ["Still undecided… getting tired", "This mood is wearing on me"],
   },
   stressNearLeaveThreshold: {
-    general: ["そろそろ帰った方がよさそうだ", "潮時かもしれない"],
-    observerJoiner: ["そろそろ帰った方がよさそうだ", "そろそろ潮時かもしれない"],
+    general: ["Maybe I should head home soon", "It might be time to call it"],
+    observerJoiner: ["Maybe I should head home soon", "It's probably about time to go"],
   },
   nearbyGroupUnapproached: {
-    general: ["行きたいけど、今入るのは少し気まずいな…", "声をかけるタイミングが難しい"],
-    observerJoiner: ["行きたいけど、今入るのは少し気まずいな…", "輪はあるけど、自分から入るのは気が引ける"],
+    general: ["Want to join, but it feels awkward now…", "Hard to find the moment to speak up"],
+    observerJoiner: ["Want to join, but it feels awkward now…", "There's a circle, but I hate to butt in"],
   },
   noJoinableGroupNearby: {
-    general: ["近くに輪が見当たらないな", "もう少し様子を見てみよう"],
-    observerJoiner: ["近くに輪が見当たらないな", "行けそうな輪がまだないから、様子を見よう"],
+    general: ["No circle in sight nearby", "I'll wait and see a bit longer"],
+    observerJoiner: ["No circle in sight nearby", "No circle to join yet — I'll wait"],
   },
 };
 

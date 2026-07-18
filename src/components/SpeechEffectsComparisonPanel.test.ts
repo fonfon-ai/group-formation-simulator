@@ -17,8 +17,8 @@ describe("SpeechEffectsComparisonPanel", () => {
       }),
     );
 
-    expect(html).toContain("発言効果OFF/ONを比較して実行");
-    expect(html).toContain("同一条件");
+    expect(html).toContain("Compare speech effects OFF/ON");
+    expect(html).toContain("identical conditions");
     expect(html).not.toContain("monte-carlo-stale");
   });
 
@@ -34,7 +34,7 @@ describe("SpeechEffectsComparisonPanel", () => {
       }),
     );
 
-    expect(html).not.toContain("が選択されているため比較できません");
+    expect(html).not.toContain("nothing to compare");
   });
 
   it("shows a note that the single simulation will pause when it is currently running", () => {
@@ -49,6 +49,6 @@ describe("SpeechEffectsComparisonPanel", () => {
       }),
     );
 
-    expect(html).toContain("単発シミュレーションは一時停止します");
+    expect(html).toContain("Running this will pause the single simulation");
   });
 });

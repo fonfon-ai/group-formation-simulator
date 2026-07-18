@@ -49,10 +49,10 @@ describe("ObserverJoinerInspector speech history", () => {
     const observer = makeAgent({ id: "observer", label: "Observer", isObserverJoiner: true });
     const html = render(makeState({ agents: [observer] }));
 
-    expect(html).toContain("まだ関連する発言はありません");
+    expect(html).toContain("No related speech yet");
   });
 
-  it("renders a speech entry where the observerJoiner is the speaker, tagged as 話者", () => {
+  it("renders a speech entry where the observerJoiner is the speaker, tagged as Speaker", () => {
     const observer = makeAgent({ id: "observer", label: "Observer", isObserverJoiner: true });
     const event = createSpeechEvent({
       tick: 3,
@@ -63,11 +63,11 @@ describe("ObserverJoinerInspector speech history", () => {
     });
     const html = render(makeState({ agents: [observer], speechLog: [event] }));
 
-    expect(html).toContain("話者");
-    expect(html).toContain("合流できた、よろしく!");
+    expect(html).toContain("Speaker");
+    expect(html).toContain("Made it");
   });
 
-  it("renders a speech entry where the observerJoiner is the explicit target, tagged as 対象", () => {
+  it("renders a speech entry where the observerJoiner is the explicit target, tagged as Target", () => {
     const observer = makeAgent({ id: "observer", label: "Observer", isObserverJoiner: true });
     const helper = makeAgent({ id: "helper", label: "Helper" });
     const event = createSpeechEvent({
@@ -79,7 +79,7 @@ describe("ObserverJoinerInspector speech history", () => {
     });
     const html = render(makeState({ agents: [observer, helper], speechLog: [event] }));
 
-    expect(html).toContain("対象");
+    expect(html).toContain("Target");
     expect(html).toContain("Helper");
   });
 
@@ -94,14 +94,14 @@ describe("ObserverJoinerInspector speech history", () => {
     });
     const html = render(makeState({ agents: [observer], speechLog: [event] }));
 
-    expect(html).toContain("まだ関連する発言はありません");
+    expect(html).toContain("No related speech yet");
   });
 
   it("shows an empty-state message for active speech effects when none are active", () => {
     const observer = makeAgent({ id: "observer", label: "Observer", isObserverJoiner: true });
     const html = render(makeState({ agents: [observer] }));
 
-    expect(html).toContain("現在作用中の発言効果はありません");
+    expect(html).toContain("No speech effects are currently active");
   });
 
   it("renders the Phase 3 causal detail block (reception/interpretation/effect) for a related speech event", () => {
@@ -181,11 +181,11 @@ describe("ObserverJoinerInspector speech history", () => {
 
     const html = render(state);
 
-    expect(html).toContain("発言効果の詳細");
-    expect(html).toContain("届いた");
-    expect(html).toContain("同調傾向");
-    expect(html).toContain("接近確率");
-    expect(html).toContain("残り3tick");
-    expect(html).toContain("現在作用中の発言効果");
+    expect(html).toContain("Speech-effect details");
+    expect(html).toContain("reached");
+    expect(html).toContain("Conformity");
+    expect(html).toContain("approach probability");
+    expect(html).toContain("3 ticks left");
+    expect(html).toContain("Currently active speech effects");
   });
 });

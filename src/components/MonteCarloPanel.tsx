@@ -19,12 +19,12 @@ type Props = {
 const DEFAULT_RUN_COUNT = 30;
 
 const AGENT_STATE_LABEL: Record<AgentState, string> = {
-  undecided: "未定",
-  forming: "輪を形成中",
-  approaching: "接近中",
-  joined: "参加済み",
-  leaving: "離脱中",
-  left: "離脱済み",
+  undecided: "Undecided",
+  forming: "Forming a circle",
+  approaching: "Approaching",
+  joined: "Joined",
+  leaving: "Leaving",
+  left: "Left",
 };
 
 function formatRate(rate: number): string {
@@ -81,11 +81,11 @@ export function MonteCarloPanel({ presetId, params, seed, interventionId, single
 
   return (
     <div className="panel monte-carlo-panel">
-      <h2>Monte Carlo実行</h2>
+      <h2>Monte Carlo run</h2>
 
       <label className="field">
         <span>
-          実行回数（{MIN_RUNS}〜{MAX_RUNS}）
+          Number of runs ({MIN_RUNS}–{MAX_RUNS})
         </span>
         <input
           type="number"
@@ -97,67 +97,67 @@ export function MonteCarloPanel({ presetId, params, seed, interventionId, single
       </label>
       {!runCountValid && (
         <p className="monte-carlo-error">
-          実行回数は{MIN_RUNS}〜{MAX_RUNS}の整数で指定してください。
+          Enter the number of runs as an integer from {MIN_RUNS} to {MAX_RUNS}.
         </p>
       )}
 
       {singleSimRunning && (
-        <p className="monte-carlo-note">実行すると、単発シミュレーションは一時停止します。</p>
+        <p className="monte-carlo-note">Running this will pause the single simulation.</p>
       )}
 
       <button type="button" onClick={handleRun} disabled={!runCountValid}>
-        {runCountInput}回実行（baseSeed {seed}〜）
+        Run {runCountInput}× (baseSeed {seed}+)
       </button>
 
       {result === null ? (
         <p className="monte-carlo-empty">
-          現在の条件でMonte Carloを実行すると、確率的傾向を確認できます。
+          Run Monte Carlo on the current conditions to see the probabilistic tendencies.
         </p>
       ) : (
         <>
           <p className="monte-carlo-condition">
-            条件: {resultPresetName} / 介入: {resultInterventionName} / baseSeed {result.config.baseSeed}〜
-            {result.config.baseSeed + result.config.runs - 1} ({result.config.runs}回)
+            Conditions: {resultPresetName} / intervention: {resultInterventionName} / baseSeed {result.config.baseSeed}–
+            {result.config.baseSeed + result.config.runs - 1} ({result.config.runs} runs)
           </p>
           {isStale && (
             <p className="monte-carlo-stale">
-              現在の条件と異なる結果です。再実行すると最新の条件で更新されます。
+              These results are from different conditions. Re-run to update to the latest conditions.
             </p>
           )}
 
           <section className="monte-carlo-summary">
             <div className="monte-carlo-summary-row">
-              <span>observerJoiner参加率</span>
+              <span>observerJoiner join rate</span>
               <span>{formatRate(result.summary.observerJoinerJoinRate)}</span>
             </div>
             <div className="monte-carlo-summary-row">
-              <span>observerJoiner離脱率</span>
+              <span>observerJoiner leave rate</span>
               <span>{formatRate(result.summary.observerJoinerLeaveRate)}</span>
             </div>
             <div className="monte-carlo-summary-row">
-              <span>グループ不成立率</span>
+              <span>Group-failure rate</span>
               <span>{formatRate(result.summary.groupFailureRate)}</span>
             </div>
             <div className="monte-carlo-summary-row">
-              <span>平均グループ成立tick</span>
+              <span>Avg. group-confirmed tick</span>
               <span>{formatOptionalTick(result.summary.averageFirstGroupConfirmedTick)}</span>
             </div>
             <div className="monte-carlo-summary-row">
-              <span>後乗り成功率</span>
+              <span>Late-join success rate</span>
               <span>{formatRate(result.summary.lateJoinSuccessRate)}</span>
             </div>
             <div className="monte-carlo-summary-row">
-              <span>平均参加人数</span>
+              <span>Avg. joined count</span>
               <span>{formatAverage(result.summary.averageJoinedCount)}</span>
             </div>
             <div className="monte-carlo-summary-row">
-              <span>平均帰宅人数</span>
+              <span>Avg. left count</span>
               <span>{formatAverage(result.summary.averageLeftCount)}</span>
             </div>
           </section>
 
           <section className="monte-carlo-runs">
-            <h3>個別run一覧</h3>
+            <h3>Individual runs</h3>
             <div className="monte-carlo-runs-list">
               {result.runs.map((run) => (
                 <div className="monte-carlo-run-row" key={run.seed}>
@@ -166,7 +166,7 @@ export function MonteCarloPanel({ presetId, params, seed, interventionId, single
                   <span>{summarizeObservers(run.summary.observerJoiners, (o) => formatTick(o.joinedTick))}</span>
                   <span>{summarizeObservers(run.summary.observerJoiners, (o) => formatTick(o.leftTick))}</span>
                   <span>{formatTick(run.summary.firstGroupConfirmedTick)}</span>
-                  <span>{run.summary.confirmedGroupCount}グループ</span>
+                  <span>{run.summary.confirmedGroupCount} groups</span>
                 </div>
               ))}
             </div>
