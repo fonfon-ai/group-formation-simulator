@@ -14,12 +14,12 @@ This project turns that invisible social process into something you can observe,
 
 ## Live demo
 
-**Demo:** `<DEMO_URL>`
+**Demo:** `https://fonfon-ai.github.io/group-formation-simulator/`
 
 No installation is required. The published version runs in the browser, including mobile Safari.
 
-> Replace `<DEMO_URL>` with your GitHub Pages URL, for example:  
-> `https://<your-org-or-user>.github.io/UGS/`
+> Replace `https://fonfon-ai.github.io/group-formation-simulator/` with your GitHub Pages URL, for example:  
+> `https://fonfon-ai.github.io/group-formation-simulator/`
 
 ---
 
@@ -313,10 +313,10 @@ npm install
 npm run dev
 ```
 
-Open the URL shown by Vite. In a GitHub Pages setup, the local URL may include `/UGS/`, for example:
+Open the URL shown by Vite. In a GitHub Pages setup, the local URL may include `/group-formation-simulator/`, for example:
 
 ```text
-http://localhost:5173/UGS/
+http://localhost:5173/group-formation-simulator/
 ```
 
 ### Scripts
@@ -348,7 +348,7 @@ npm run dev:host
 4. Open the network URL from iPhone Safari, for example:
 
 ```text
-http://192.168.1.23:5173/UGS/
+http://192.168.1.23:5173/group-formation-simulator/
 ```
 
 Some corporate or public Wi-Fi networks block device-to-device communication. If the page does not open, try a private network or check firewall settings.
