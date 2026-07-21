@@ -1,13 +1,11 @@
 import { buildObserverJoinerInspection } from "../simulation/inspection";
 import type {
-  AgentState,
   GroupCandidateStatus,
   ObserverJoinerInspection,
   ObserverSpeechEffectDetail,
   ObserverSpeechHistoryEntry,
   SimParams,
   SimulationState,
-  SpeechRelation,
 } from "../simulation/types";
 import { buildAgentLabelMap, formatSpeechDebugMeta, formatSpeechLogMessage } from "./speechDisplay";
 import {
@@ -19,37 +17,67 @@ import {
   formatInterpretationLine,
   formatReceptionLine,
 } from "./speechEffectsDisplay";
+import { useLang } from "../i18n/lang";
+import { agentStateLabel, groupStatusLabel, speechRelationLabel } from "../i18n/labels";
 
 type Props = {
   state: SimulationState;
   params: SimParams;
 };
 
-const SPEECH_RELATION_LABEL: Record<SpeechRelation, string> = {
-  speaker: "Speaker",
-  target: "Target",
-  audience: "Nearby",
-};
-
-const AGENT_STATE_LABEL: Record<AgentState, string> = {
-  undecided: "Undecided",
-  forming: "Forming a circle",
-  approaching: "Approaching",
-  joined: "Joined",
-  leaving: "Leaving",
-  left: "Left",
-};
-
-const GROUP_STATUS_LABEL: Record<GroupCandidateStatus, string> = {
-  forming: "Forming",
-  confirmed: "Confirmed",
-  dissolving: "Dissolving",
-  dissolved: "Dissolved",
-  expired: "Expired",
-};
-
 // leaveMarginがこの値を下回ったら、まだ離脱していなくても注意表示にする
 const LEAVE_MARGIN_WARNING_THRESHOLD = 0.15;
+
+const UI = {
+  en: {
+    noRecord: "No speech-effect record (Phase 3 effects disabled, or this agent wasn't in reception range)",
+    detailsSummary: "Speech-effect details",
+    noReception: "No reception record",
+    reasonNotHeard: (reason: string) => `Reason not heard: out of range (${reason})`,
+    heardNoInterp: "Heard, but no interpretation record",
+    neutralNoEffect: "The interpretation was neutral, so no effect occurred",
+    noActiveEffects: "No speech effects are currently active.",
+    duplicate: "(duplicate, not applied)",
+    marginBeforeLeaving: "margin before leaving",
+    aboutToLeave: " ⚠ about to leave",
+    nearestGroupStatus: "nearest group status",
+    nearestGroupSize: "nearest group size",
+    nearestGroupDistance: "nearest group distance",
+    attractivenessAfter: "attractiveness (after effects)",
+    attractivenessBefore: "attractiveness (before effects)",
+    ofWhichSpeechEffect: "of which, speech-effect adjustment",
+    none: "none",
+    relatedSpeech: "related speech",
+    noRelatedSpeech: "No related speech yet.",
+    activeEffectsHeader: "Currently active speech effects",
+    title: "observerJoiner inspector",
+    noObserver: "There is no observerJoiner.",
+  },
+  ja: {
+    noRecord: "発言効果の記録なし(Phase 3効果が無効、またはこのagentが認知対象になっていない)",
+    detailsSummary: "発言効果の詳細",
+    noReception: "認知記録なし",
+    reasonNotHeard: (reason: string) => `非認知理由: 圏外(${reason})`,
+    heardNoInterp: "届いたが解釈記録なし",
+    neutralNoEffect: "解釈が中立だったため効果は発生しなかった",
+    noActiveEffects: "現在作用中の発言効果はありません。",
+    duplicate: "(重複・不採用)",
+    marginBeforeLeaving: "離脱までの余裕",
+    aboutToLeave: " ⚠ 離脱間近",
+    nearestGroupStatus: "nearest group status",
+    nearestGroupSize: "nearest group人数",
+    nearestGroupDistance: "nearest group距離",
+    attractivenessAfter: "attractiveness(適用後)",
+    attractivenessBefore: "attractiveness(適用前)",
+    ofWhichSpeechEffect: "うち発言効果による補正",
+    none: "なし",
+    relatedSpeech: "関連する発言",
+    noRelatedSpeech: "まだ関連する発言はありません。",
+    activeEffectsHeader: "現在作用中の発言効果",
+    title: "observerJoinerインスペクター",
+    noObserver: "observerJoinerがいません。",
+  },
+} as const;
 
 function formatRatio(value: number): string {
   return `${Math.round(value * 100)}%`;
@@ -61,8 +89,6 @@ function formatDistance(value: number): string {
 
 /**
  * `entry`(発言1件)の認知/解釈/効果の因果詳細を折りたたみ表示する(Issue #98)。
- * どの段まで進んだか(認知されなかった/解釈が中立だった/効果が既に失効した等)を、
- * 各段の有無から文言として明示する — 「非認知・効果なしの理由も確認できる」の受入条件に対応。
  */
 function SpeechEffectDetailBlock({
   detail,
@@ -71,51 +97,50 @@ function SpeechEffectDetailBlock({
   detail: ObserverSpeechEffectDetail;
   labelById: Map<string, string>;
 }) {
+  const { lang } = useLang();
+  const t = UI[lang];
+
   if (!detail.reception && !detail.interpretation && !detail.effect) {
-    return (
-      <p className="observer-inspector-effect-empty">
-        No speech-effect record (Phase 3 effects disabled, or this agent wasn't in reception range)
-      </p>
-    );
+    return <p className="observer-inspector-effect-empty">{t.noRecord}</p>;
   }
 
   return (
     <details className="observer-inspector-effect-details">
-      <summary>Speech-effect details</summary>
+      <summary>{t.detailsSummary}</summary>
 
       {detail.reception ? (
-        <div className="observer-inspector-effect-line">{formatReceptionLine(detail.reception, labelById)}</div>
+        <div className="observer-inspector-effect-line">{formatReceptionLine(detail.reception, labelById, lang)}</div>
       ) : (
-        <div className="observer-inspector-effect-line">No reception record</div>
+        <div className="observer-inspector-effect-line">{t.noReception}</div>
       )}
 
       {detail.reception && !detail.reception.heard && (
-        <p className="observer-inspector-effect-reason">Reason not heard: out of range ({detail.reception.reason})</p>
+        <p className="observer-inspector-effect-reason">{t.reasonNotHeard(detail.reception.reason)}</p>
       )}
 
       {detail.reception?.heard && !detail.interpretation && (
-        <p className="observer-inspector-effect-reason">Heard, but no interpretation record</p>
+        <p className="observer-inspector-effect-reason">{t.heardNoInterp}</p>
       )}
 
       {detail.interpretation && (
         <>
-          <div className="observer-inspector-effect-line">{formatInterpretationLine(detail.interpretation, labelById)}</div>
+          <div className="observer-inspector-effect-line">{formatInterpretationLine(detail.interpretation, labelById, lang)}</div>
           <ul className="observer-inspector-factor-list">
             {detail.interpretation.factors.map((factor) => (
-              <li key={factor.key}>{formatInterpretationFactorLine(factor)}</li>
+              <li key={factor.key}>{formatInterpretationFactorLine(factor, lang)}</li>
             ))}
           </ul>
         </>
       )}
 
       {detail.interpretation && detail.interpretation.valence === "neutral" && !detail.effect && (
-        <p className="observer-inspector-effect-reason">The interpretation was neutral, so no effect occurred</p>
+        <p className="observer-inspector-effect-reason">{t.neutralNoEffect}</p>
       )}
 
       {detail.effect && (
         <>
-          <div className="observer-inspector-effect-line">{formatEffectLine(detail.effect, labelById)}</div>
-          <div className="observer-inspector-effect-line">{formatActiveEffectStatusLine(detail.activeEffectStatus)}</div>
+          <div className="observer-inspector-effect-line">{formatEffectLine(detail.effect, labelById, lang)}</div>
+          <div className="observer-inspector-effect-line">{formatActiveEffectStatusLine(detail.activeEffectStatus, lang)}</div>
         </>
       )}
     </details>
@@ -131,11 +156,12 @@ function SpeechHistoryEntry({
   detail?: ObserverSpeechEffectDetail;
   labelById: Map<string, string>;
 }) {
+  const { lang } = useLang();
   return (
     <div className="observer-inspector-speech-entry">
       <div className="observer-inspector-speech-message">
-        <span className="observer-inspector-speech-relation">{SPEECH_RELATION_LABEL[entry.relation]}</span>
-        {formatSpeechLogMessage(entry.event, labelById)}
+        <span className="observer-inspector-speech-relation">{speechRelationLabel(entry.relation, lang)}</span>
+        {formatSpeechLogMessage(entry.event, labelById, lang)}
       </div>
       <div className="observer-inspector-speech-meta">{formatSpeechDebugMeta(entry.event, labelById)}</div>
       {detail && <SpeechEffectDetailBlock detail={detail} labelById={labelById} />}
@@ -144,8 +170,7 @@ function SpeechHistoryEntry({
 }
 
 /**
- * 現在このagentに作用しているPhase 3効果を、dimensionごとの集約値+個別寄与(speechEventIdの列挙)で
- * 表示する(Issue #98)。複数の発言が同じdimensionへ寄与している場合、正/負/重複の内訳を分けて示す。
+ * 現在このagentに作用しているPhase 3効果を、dimensionごとの集約値+個別寄与で表示する(Issue #98)。
  */
 function ActiveEffectSummaryList({
   summaries,
@@ -154,32 +179,34 @@ function ActiveEffectSummaryList({
   summaries: ObserverJoinerInspection["activeEffectSummaries"];
   labelById: Map<string, string>;
 }) {
+  const { lang } = useLang();
+  const t = UI[lang];
   if (summaries.length === 0) {
-    return <p className="observer-inspector-speech-empty">No speech effects are currently active.</p>;
+    return <p className="observer-inspector-speech-empty">{t.noActiveEffects}</p>;
   }
   return (
     <div className="observer-inspector-speech-list">
       {summaries.map((summary) => (
         <div key={`${summary.dimension}-${summary.targetGroupId ?? ""}`} className="observer-inspector-speech-entry">
-          <div className="observer-inspector-speech-message">{formatAggregatedEffectSummary(summary)}</div>
+          <div className="observer-inspector-speech-message">{formatAggregatedEffectSummary(summary, lang)}</div>
           {summary.positiveContributions.length > 0 && (
             <ul className="observer-inspector-factor-list">
               {summary.positiveContributions.map((c) => (
-                <li key={c.speechActiveEffectId}>+ {formatContributionLine(c, labelById)}</li>
+                <li key={c.speechActiveEffectId}>+ {formatContributionLine(c, labelById, lang)}</li>
               ))}
             </ul>
           )}
           {summary.negativeContributions.length > 0 && (
             <ul className="observer-inspector-factor-list">
               {summary.negativeContributions.map((c) => (
-                <li key={c.speechActiveEffectId}>- {formatContributionLine(c, labelById)}</li>
+                <li key={c.speechActiveEffectId}>- {formatContributionLine(c, labelById, lang)}</li>
               ))}
             </ul>
           )}
           {summary.duplicateContributions.length > 0 && (
             <ul className="observer-inspector-factor-list">
               {summary.duplicateContributions.map((c) => (
-                <li key={c.speechActiveEffectId}>(duplicate, not applied) {formatContributionLine(c, labelById)}</li>
+                <li key={c.speechActiveEffectId}>{t.duplicate} {formatContributionLine(c, labelById, lang)}</li>
               ))}
             </ul>
           )}
@@ -196,6 +223,8 @@ function InspectionCard({
   inspection: ObserverJoinerInspection;
   labelById: Map<string, string>;
 }) {
+  const { lang } = useLang();
+  const t = UI[lang];
   const isNearLeaving = inspection.leaveMargin <= LEAVE_MARGIN_WARNING_THRESHOLD;
   const hasNearestGroup = inspection.nearestGroupId !== undefined;
 
@@ -203,7 +232,7 @@ function InspectionCard({
     <div className={`observer-inspector-card${isNearLeaving ? " observer-inspector-card--warning" : ""}`}>
       <div className="observer-inspector-row observer-inspector-row--header">
         <span className="observer-inspector-label-name">{inspection.label}</span>
-        <span className="observer-inspector-state">{AGENT_STATE_LABEL[inspection.state]}</span>
+        <span className="observer-inspector-state">{agentStateLabel(inspection.state, lang)}</span>
       </div>
 
       <div className="observer-inspector-row">
@@ -227,10 +256,10 @@ function InspectionCard({
         <span>{formatRatio(inspection.leaveThreshold)}</span>
       </div>
       <div className={`observer-inspector-row${isNearLeaving ? " observer-inspector-row--warning" : ""}`}>
-        <span>margin before leaving</span>
+        <span>{t.marginBeforeLeaving}</span>
         <span>
           {formatRatio(inspection.leaveMargin)}
-          {isNearLeaving ? " ⚠ about to leave" : ""}
+          {isNearLeaving ? t.aboutToLeave : ""}
         </span>
       </div>
 
@@ -243,30 +272,30 @@ function InspectionCard({
             <span>{inspection.nearestGroupId}</span>
           </div>
           <div className="observer-inspector-row">
-            <span>nearest group status</span>
-            <span>{GROUP_STATUS_LABEL[inspection.nearestGroupStatus as GroupCandidateStatus]}</span>
+            <span>{t.nearestGroupStatus}</span>
+            <span>{groupStatusLabel(inspection.nearestGroupStatus as GroupCandidateStatus, lang)}</span>
           </div>
           <div className="observer-inspector-row">
-            <span>nearest group size</span>
+            <span>{t.nearestGroupSize}</span>
             <span>{inspection.nearestGroupMemberCount}</span>
           </div>
           <div className="observer-inspector-row">
-            <span>nearest group distance</span>
+            <span>{t.nearestGroupDistance}</span>
             <span>{formatDistance(inspection.nearestGroupDistance as number)}</span>
           </div>
           <div className="observer-inspector-row">
-            <span>attractiveness (after effects)</span>
+            <span>{t.attractivenessAfter}</span>
             <span>{formatRatio(inspection.attractivenessScore as number)}</span>
           </div>
           {inspection.attractivenessScoreBeforeEffects !== undefined &&
             inspection.attractivenessScoreBeforeEffects !== inspection.attractivenessScore && (
               <>
                 <div className="observer-inspector-row">
-                  <span>attractiveness (before effects)</span>
+                  <span>{t.attractivenessBefore}</span>
                   <span>{formatRatio(inspection.attractivenessScoreBeforeEffects)}</span>
                 </div>
                 <div className="observer-inspector-row">
-                  <span>of which, speech-effect adjustment</span>
+                  <span>{t.ofWhichSpeechEffect}</span>
                   <span>
                     {formatRatio(
                       (inspection.attractivenessScore as number) - inspection.attractivenessScoreBeforeEffects,
@@ -279,17 +308,17 @@ function InspectionCard({
       ) : (
         <div className="observer-inspector-row">
           <span>nearest group</span>
-          <span>none</span>
+          <span>{t.none}</span>
         </div>
       )}
 
       <div className="observer-inspector-divider" />
 
       <div className="observer-inspector-row observer-inspector-row--header">
-        <span>related speech</span>
+        <span>{t.relatedSpeech}</span>
       </div>
       {inspection.speechHistory.length === 0 ? (
-        <p className="observer-inspector-speech-empty">No related speech yet.</p>
+        <p className="observer-inspector-speech-empty">{t.noRelatedSpeech}</p>
       ) : (
         <div className="observer-inspector-speech-list">
           {inspection.speechHistory.map((entry, i) => (
@@ -306,7 +335,7 @@ function InspectionCard({
       <div className="observer-inspector-divider" />
 
       <div className="observer-inspector-row observer-inspector-row--header">
-        <span>Currently active speech effects</span>
+        <span>{t.activeEffectsHeader}</span>
       </div>
       <ActiveEffectSummaryList summaries={inspection.activeEffectSummaries} labelById={labelById} />
     </div>
@@ -314,14 +343,16 @@ function InspectionCard({
 }
 
 export function ObserverJoinerInspector({ state, params }: Props) {
+  const { lang } = useLang();
+  const t = UI[lang];
   const inspections = buildObserverJoinerInspection(state, params);
   const labelById = buildAgentLabelMap(state.agents);
 
   return (
     <div className="panel observer-inspector">
-      <h2>observerJoiner inspector</h2>
+      <h2>{t.title}</h2>
       {inspections.length === 0 ? (
-        <p className="observer-inspector-empty">There is no observerJoiner.</p>
+        <p className="observer-inspector-empty">{t.noObserver}</p>
       ) : (
         inspections.map((inspection) => (
           <InspectionCard key={inspection.agentId} inspection={inspection} labelById={labelById} />

@@ -1,36 +1,48 @@
 import type { ExpressionDisplayDensity, ExpressionDisplaySettingsState, ExpressionDisplayTarget } from "./expressionDisplayFilter";
+import { useLang } from "../i18n/lang";
+import type { Lang } from "../i18n/types";
 
 type Props = {
   settings: ExpressionDisplaySettingsState;
   onSettingsChange: (settings: ExpressionDisplaySettingsState) => void;
 };
 
-const TARGET_OPTIONS: Array<{ value: ExpressionDisplayTarget; label: string }> = [
-  { value: "all", label: "All agents" },
-  { value: "observerJoiner", label: "observerJoiner only" },
-  { value: "important", label: "Important events only" },
+const TARGET_OPTIONS: Array<{ value: ExpressionDisplayTarget; label: Record<Lang, string> }> = [
+  { value: "all", label: { en: "All agents", ja: "全エージェント" } },
+  { value: "observerJoiner", label: { en: "observerJoiner only", ja: "observerJoinerのみ" } },
+  { value: "important", label: { en: "Important events only", ja: "重要イベントのみ" } },
 ];
 
-const DENSITY_OPTIONS: Array<{ value: ExpressionDisplayDensity; label: string }> = [
-  { value: "few", label: "Fewer" },
-  { value: "standard", label: "Standard" },
-  { value: "many", label: "More" },
+const DENSITY_OPTIONS: Array<{ value: ExpressionDisplayDensity; label: Record<Lang, string> }> = [
+  { value: "few", label: { en: "Fewer", ja: "少なめ" } },
+  { value: "standard", label: { en: "Standard", ja: "標準" } },
+  { value: "many", label: { en: "More", ja: "多め" } },
 ];
 
-/**
- * 心の声吹き出しの表示設定(ON/OFF・表示対象・表示密度)。常設ボタンを並べず、
- * checkbox 1つ + select 2つのみのコンパクトな構成にする(Issue #66「設定UIをコンパクトにする」)。
- * ここでの変更はApp.tsx側でSimulationCanvasへ渡す表示リストを絞り込むだけで、
- * シミュレーションstate・ログ・最終結果には一切影響しない。
- */
+const UI = {
+  en: {
+    title: "Inner voice",
+    note: 'The "inner voice" is a non-intervening expression visible only to the observer, not something the agent actually says. Changing this display setting does not change the simulation result.',
+    show: "Show inner voice",
+    target: "Show for",
+    density: "Density",
+  },
+  ja: {
+    title: "心の声表示",
+    note: "「心の声」は観察者にだけ見える非介入の表現で、エージェント本人の発言ではありません。この表示設定を変えてもシミュレーションの結果は変わりません。",
+    show: "心の声を表示する",
+    target: "表示対象",
+    density: "表示密度",
+  },
+} as const;
+
 export function ExpressionDisplaySettings({ settings, onSettingsChange }: Props) {
+  const { lang } = useLang();
+  const t = UI[lang];
   return (
     <div className="panel expression-display-settings">
-      <h2>Inner voice</h2>
-      <p className="expression-display-note">
-        The "inner voice" is a non-intervening expression visible only to the observer, not something the agent actually says.
-        Changing this display setting does not change the simulation result.
-      </p>
+      <h2>{t.title}</h2>
+      <p className="expression-display-note">{t.note}</p>
 
       <label className="field expression-display-toggle">
         <input
@@ -38,13 +50,13 @@ export function ExpressionDisplaySettings({ settings, onSettingsChange }: Props)
           checked={settings.enabled}
           onChange={(e) => onSettingsChange({ ...settings, enabled: e.target.checked })}
         />
-        <span>Show inner voice</span>
+        <span>{t.show}</span>
       </label>
 
       {settings.enabled && (
         <>
           <label className="field">
-            <span>Show for</span>
+            <span>{t.target}</span>
             <select
               value={settings.target}
               onChange={(e) =>
@@ -53,14 +65,14 @@ export function ExpressionDisplaySettings({ settings, onSettingsChange }: Props)
             >
               {TARGET_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {option.label[lang]}
                 </option>
               ))}
             </select>
           </label>
 
           <label className="field">
-            <span>Density</span>
+            <span>{t.density}</span>
             <select
               value={settings.density}
               onChange={(e) =>
@@ -69,7 +81,7 @@ export function ExpressionDisplaySettings({ settings, onSettingsChange }: Props)
             >
               {DENSITY_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
-                  {option.label}
+                  {option.label[lang]}
                 </option>
               ))}
             </select>

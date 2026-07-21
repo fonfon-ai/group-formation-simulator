@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { SimulationState } from "../simulation/types";
+import type { Lang } from "../i18n/types";
 import {
   applySpeechBubbleEvents,
   createActiveSpeechBubblesState,
@@ -27,6 +28,8 @@ export type UseActiveSpeechBubblesOptions = {
   /** falseの間は候補抽出・競合制御を一切行わず、表示を空にする(表示設定「発言OFF」用) */
   enabled?: boolean;
   maxConcurrent?: number;
+  /** 吹き出し文言を解決する言語。未指定時は英語。App.tsxは`resetKey`にもlangを含めて切替時に再構築する。 */
+  lang?: Lang;
 };
 
 export type SpeechBubbleDisplayDriverState = {
@@ -53,7 +56,7 @@ export function advanceSpeechBubbleDisplay(
   resetKey: unknown,
   options: UseActiveSpeechBubblesOptions = {},
 ): SpeechBubbleDisplayDriverState {
-  const { enabled = true, maxConcurrent } = options;
+  const { enabled = true, maxConcurrent, lang = "en" } = options;
 
   if (driver.resetKey !== resetKey) {
     return createSpeechBubbleDisplayDriverState(simState, resetKey);
@@ -77,7 +80,7 @@ export function advanceSpeechBubbleDisplay(
   const candidates = newEvents.map((event) => {
     const agent = simState.agents.find((a) => a.id === event.speakerId);
     const isObserverJoiner = agent?.isObserverJoiner ?? false;
-    return toSpeechBubbleCandidate(event, formatSpeechBubbleText(event, labelById), isObserverJoiner);
+    return toSpeechBubbleCandidate(event, formatSpeechBubbleText(event, labelById, lang), isObserverJoiner);
   });
 
   const bubbles = applySpeechBubbleEvents(driver.bubbles, candidates, simState.tick, { maxConcurrent });
@@ -96,19 +99,19 @@ export function useActiveSpeechBubbles(
   resetKey: unknown,
   options: UseActiveSpeechBubblesOptions = {},
 ): SpeechBubbleDisplay[] {
-  const { enabled, maxConcurrent } = options;
+  const { enabled, maxConcurrent, lang } = options;
   const driverRef = useRef<SpeechBubbleDisplayDriverState>(
     createSpeechBubbleDisplayDriverState(simState, resetKey),
   );
   const [displayed, setDisplayed] = useState<SpeechBubbleDisplay[]>(driverRef.current.displayed);
 
   useEffect(() => {
-    const next = advanceSpeechBubbleDisplay(driverRef.current, simState, resetKey, { enabled, maxConcurrent });
+    const next = advanceSpeechBubbleDisplay(driverRef.current, simState, resetKey, { enabled, maxConcurrent, lang });
     if (next !== driverRef.current) {
       driverRef.current = next;
       setDisplayed(next.displayed);
     }
-  }, [simState, resetKey, enabled, maxConcurrent]);
+  }, [simState, resetKey, enabled, maxConcurrent, lang]);
 
   return displayed;
 }

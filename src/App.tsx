@@ -25,9 +25,11 @@ import {
 } from "./components/speechBubbleDisplayFilter";
 import { createInitialState, stepSimulation } from "./simulation/engine";
 import { SeededRandom } from "./simulation/random";
-import { getPresetById, PRESETS } from "./simulation/presets";
-import { getInterventionById } from "./simulation/interventions";
+import { getPresetById, PRESETS, presetName } from "./simulation/presets";
+import { getInterventionById, interventionName } from "./simulation/interventions";
 import type { InterventionScenarioId } from "./simulation/interventions";
+import { useLang } from "./i18n/lang";
+import { LanguageToggle } from "./components/LanguageToggle";
 import type { SimParams, SimulationState } from "./simulation/types";
 import { useActiveExpressions } from "./hooks/useActiveExpressions";
 import { useActiveSpeechBubbles } from "./hooks/useActiveSpeechBubbles";
@@ -36,13 +38,39 @@ import { useIsMobile } from "./hooks/useIsMobile";
 const TICK_INTERVAL_MS = 250;
 const INITIAL_SEED = 12345;
 
-const INTRO_TEXT =
-  "This prototype visualizes how a group forms during an ambiguous transition moment — " +
-  "the kind where whether to go on to a next round is decided by the mood of the room. " +
-  "The orange agents are people who want to go but don't want to move the room themselves (observerJoiner).";
+const UI = {
+  en: {
+    title: "Group Formation Simulator",
+    intro:
+      "This prototype visualizes how a group forms during an ambiguous transition moment — " +
+      "the kind where whether to go on to a next round is decided by the mood of the room. " +
+      "The orange agents are people who want to go but don't want to move the room themselves (observerJoiner).",
+    about: "About this simulator",
+    finished: "(finished)",
+    running: "(running)",
+    paused: "(paused)",
+    preset: "Preset:",
+    intervention: "Intervention:",
+  },
+  ja: {
+    title: "グループ形成過程シミュレーター",
+    intro:
+      "このプロトタイプは、二次会に行くかどうかがその場の空気で決まるような、曖昧な移行場面での" +
+      "グループ形成過程を可視化します。オレンジ色のエージェントは" +
+      "「行きたいが、自分の意思で場を動かしたくない人 (observerJoiner)」です。",
+    about: "このシミュレーターについて",
+    finished: "(終了)",
+    running: "(実行中)",
+    paused: "(一時停止)",
+    preset: "プリセット:",
+    intervention: "介入:",
+  },
+} as const;
 
 function App() {
   const isMobile = useIsMobile();
+  const { lang } = useLang();
+  const t = UI[lang];
   const [presetId, setPresetId] = useState(PRESETS[0].id);
   const [params, setParams] = useState<SimParams>(PRESETS[0].params);
   const [seed, setSeed] = useState(INITIAL_SEED);
@@ -90,14 +118,16 @@ function App() {
     [],
   );
 
-  const activeThoughts = useActiveExpressions(simState, seed, runId, {
+  const activeThoughts = useActiveExpressions(simState, seed, `${runId}:${lang}`, {
     enabled: expressionDisplaySettings.enabled,
     maxConcurrent: EXPRESSION_DISPLAY_DENSITY_MAX_CONCURRENT[expressionDisplaySettings.density],
+    lang,
   });
   const visibleThoughts = filterThoughtsForDisplay(activeThoughts, expressionDisplaySettings.target);
 
-  const visibleSpeeches = useActiveSpeechBubbles(simState, runId, {
+  const visibleSpeeches = useActiveSpeechBubbles(simState, `${runId}:${lang}`, {
     enabled: speechBubbleDisplaySettings.enabled,
+    lang,
   });
 
   const hasPendingResetChanges = RESET_REQUIRED_PARAM_KEYS.some(
@@ -164,21 +194,24 @@ function App() {
   return (
     <div className="app-root">
       <header className="app-header">
-        <h1>Group Formation Simulator</h1>
+        <div className="app-header-top">
+          <h1>{t.title}</h1>
+          <LanguageToggle />
+        </div>
         {isMobile ? (
           <details className="app-intro-details">
-            <summary>About this simulator</summary>
-            <p>{INTRO_TEXT}</p>
+            <summary>{t.about}</summary>
+            <p>{t.intro}</p>
           </details>
         ) : (
-          <p>{INTRO_TEXT}</p>
+          <p>{t.intro}</p>
         )}
         <p className="tick-status">
-          Tick: {simState.tick} {simState.finished ? "(finished)" : running ? "(running)" : "(paused)"}
+          Tick: {simState.tick} {simState.finished ? t.finished : running ? t.running : t.paused}
         </p>
         <p className="current-condition">
-          Preset: {getPresetById(presetId).name} / seed: {seed} / Intervention:{" "}
-          {getInterventionById(interventionId).name}
+          {t.preset} {presetName(getPresetById(presetId), lang)} / seed: {seed} / {t.intervention}{" "}
+          {interventionName(getInterventionById(interventionId), lang)}
         </p>
       </header>
 

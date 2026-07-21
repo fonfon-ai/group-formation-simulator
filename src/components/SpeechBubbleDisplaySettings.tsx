@@ -1,24 +1,31 @@
 import type { SpeechBubbleDisplaySettingsState } from "./speechBubbleDisplayFilter";
+import { useLang } from "../i18n/lang";
 
 type Props = {
   settings: SpeechBubbleDisplaySettingsState;
   onSettingsChange: (settings: SpeechBubbleDisplaySettingsState) => void;
 };
 
-/**
- * 発言吹き出しの表示設定(ON/OFF)。`ExpressionDisplaySettings`(心の声)と対になる、
- * 独立したcheckbox 1つだけのコンパクトな設定パネル。ここでの変更はApp.tsx側で
- * SimulationCanvasへ渡す表示リストを空にする/戻すだけで、シミュレーションstate・ログ・
- * 最終結果には一切影響しない(心の声設定と同じ非介入の保証)。
- */
+const UI = {
+  en: {
+    title: "Speech",
+    note: 'A "speech" is a line actually spoken toward other agents. Changing this display setting does not change the simulation result.',
+    show: "Show speech bubbles",
+  },
+  ja: {
+    title: "発言表示",
+    note: "「発言」は他のエージェントへ向けて実際に発せられたセリフです。この表示設定を変えてもシミュレーションの結果は変わりません。",
+    show: "発言吹き出しを表示する",
+  },
+} as const;
+
 export function SpeechBubbleDisplaySettings({ settings, onSettingsChange }: Props) {
+  const { lang } = useLang();
+  const t = UI[lang];
   return (
     <div className="panel speech-bubble-display-settings">
-      <h2>Speech</h2>
-      <p className="speech-bubble-display-note">
-        A "speech" is a line actually spoken toward other agents.
-        Changing this display setting does not change the simulation result.
-      </p>
+      <h2>{t.title}</h2>
+      <p className="speech-bubble-display-note">{t.note}</p>
 
       <label className="field speech-bubble-display-toggle">
         <input
@@ -26,7 +33,7 @@ export function SpeechBubbleDisplaySettings({ settings, onSettingsChange }: Prop
           checked={settings.enabled}
           onChange={(e) => onSettingsChange({ ...settings, enabled: e.target.checked })}
         />
-        <span>Show speech bubbles</span>
+        <span>{t.show}</span>
       </label>
     </div>
   );

@@ -26,11 +26,13 @@ describe("INTERVENTION_SCENARIOS", () => {
     expect(none).toBeDefined();
   });
 
-  it("gives every scenario a name, description, and expectedEffect", () => {
+  it("gives every scenario a name, description, and expectedEffect in both languages", () => {
     for (const scenario of INTERVENTION_SCENARIOS) {
-      expect(scenario.name.length).toBeGreaterThan(0);
-      expect(scenario.description.length).toBeGreaterThan(0);
-      expect(scenario.expectedEffect.length).toBeGreaterThan(0);
+      for (const lang of ["en", "ja"] as const) {
+        expect(scenario.name[lang].length).toBeGreaterThan(0);
+        expect(scenario.description[lang].length).toBeGreaterThan(0);
+        expect(scenario.expectedEffect[lang].length).toBeGreaterThan(0);
+      }
     }
   });
 

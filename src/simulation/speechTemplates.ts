@@ -1,33 +1,30 @@
 import type { SpeechEvent, SpeechReason } from "./speech";
+import type { Lang } from "../i18n/types";
 
 /**
- * `SpeechReason`ごとの発言テンプレート文言。文言そのものはこのモジュールでのみ保持し、
+ * `SpeechReason`ごとの発言テンプレート文言(言語別)。文言そのものはこのモジュールでのみ保持し、
  * `speech.ts`(発言生成境界)はここを参照しない(`textKey`の組み立てのみ担当)。
- * engine.tsの状態ログで既に使われている引用文言と表記を揃えている。
- *
- * `ExpressionReason`用のテンプレート(`expressionTemplates.ts`)とは異なり、Phase 2時点では
- * バリエーション選択の仕組みは持たない(reasonごとに1文言のみ)。将来バリエーションが必要になった際は
- * `expressionTemplates.ts`と同様の決定的選択方式を追加すること。
+ * `lang`未指定時は英語にフォールバックする(既存の呼び出し・テストとの後方互換)。
  */
-const TEMPLATES: Record<SpeechReason, string> = {
-  initiativeFormedCore: "Shall we go somewhere next?",
-  cliqueFormedCore: "Shall we go somewhere next?",
-  formingGroupRecruitment: "Want to join us over here?",
-  approachWelcome: "Come on over, this way!",
-  joinGreeting: "Made it — good to be here!",
-  leaveDeclaration: "I'll head home for today — see you next time!",
-  lightObserverInvitation: "Want to come along with us?",
+const TEMPLATES: Record<SpeechReason, Record<Lang, string>> = {
+  initiativeFormedCore: { en: "Shall we go somewhere next?", ja: "もう一軒行く?" },
+  cliqueFormedCore: { en: "Shall we go somewhere next?", ja: "もう一軒行く?" },
+  formingGroupRecruitment: { en: "Want to join us over here?", ja: "こっちも一緒にどう?" },
+  approachWelcome: { en: "Come on over, this way!", ja: "おいでおいで、こっちだよ" },
+  joinGreeting: { en: "Made it — good to be here!", ja: "合流できた、よろしく!" },
+  leaveDeclaration: { en: "I'll head home for today — see you next time!", ja: "今日はここで帰るね、また今度!" },
+  lightObserverInvitation: { en: "Want to come along with us?", ja: "よかったら一緒に行く?" },
 };
 
 /** `reason`から実際の発言文言を解決する */
-export function resolveSpeechText(reason: SpeechReason): string {
-  return TEMPLATES[reason];
+export function resolveSpeechText(reason: SpeechReason, lang: Lang = "en"): string {
+  return TEMPLATES[reason][lang];
 }
 
 /**
  * `SpeechEvent`から実際の発言文言を解決する。表示側(UI)が`textKey`の文字列構造を
  * 直接パースしなくて済むようにする薄いラッパー(`resolveExpressionEventText`と同じ設計)。
  */
-export function resolveSpeechEventText(event: SpeechEvent): string {
-  return resolveSpeechText(event.reason);
+export function resolveSpeechEventText(event: SpeechEvent, lang: Lang = "en"): string {
+  return resolveSpeechText(event.reason, lang);
 }

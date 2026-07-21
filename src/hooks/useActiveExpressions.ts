@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { SimulationState } from "../simulation/types";
+import type { Lang } from "../i18n/types";
 import { deriveExpressionEvents } from "../simulation/expression";
 import { resolveExpressionEventText } from "../simulation/expressionTemplates";
 import {
@@ -24,6 +25,8 @@ export type UseActiveExpressionsOptions = {
   /** falseの間は導出・競合制御を一切行わず、表示を空にする(表示設定「心の声OFF」用) */
   enabled?: boolean;
   maxConcurrent?: number;
+  /** 吹き出し文言を解決する言語。未指定時は英語。App.tsxは`resetKey`にもlangを含めて切替時に再構築する。 */
+  lang?: Lang;
 };
 
 /**
@@ -58,7 +61,7 @@ export function advanceExpressionDisplay(
   seed: number,
   options: UseActiveExpressionsOptions = {},
 ): ExpressionDisplayDriverState {
-  const { enabled = true, maxConcurrent } = options;
+  const { enabled = true, maxConcurrent, lang = "en" } = options;
 
   if (driver.resetKey !== resetKey) {
     return createExpressionDisplayDriverState(simState, resetKey);
@@ -82,7 +85,7 @@ export function advanceExpressionDisplay(
   const candidates = events.map((event) => {
     const agent = simState.agents.find((a) => a.id === event.agentId);
     const isObserverJoiner = agent?.isObserverJoiner ?? false;
-    return toExpressionBubbleCandidate(event, resolveExpressionEventText(event, isObserverJoiner), isObserverJoiner);
+    return toExpressionBubbleCandidate(event, resolveExpressionEventText(event, isObserverJoiner, lang), isObserverJoiner);
   });
 
   const expressions = applyExpressionEvents(driver.expressions, candidates, simState.tick, { maxConcurrent });
@@ -102,17 +105,17 @@ export function useActiveExpressions(
   resetKey: unknown,
   options: UseActiveExpressionsOptions = {},
 ): ThoughtBubbleDisplay[] {
-  const { enabled, maxConcurrent } = options;
+  const { enabled, maxConcurrent, lang } = options;
   const driverRef = useRef<ExpressionDisplayDriverState>(createExpressionDisplayDriverState(simState, resetKey));
   const [displayed, setDisplayed] = useState<ThoughtBubbleDisplay[]>(driverRef.current.displayed);
 
   useEffect(() => {
-    const next = advanceExpressionDisplay(driverRef.current, simState, resetKey, seed, { enabled, maxConcurrent });
+    const next = advanceExpressionDisplay(driverRef.current, simState, resetKey, seed, { enabled, maxConcurrent, lang });
     if (next !== driverRef.current) {
       driverRef.current = next;
       setDisplayed(next.displayed);
     }
-  }, [simState, seed, resetKey, enabled, maxConcurrent]);
+  }, [simState, seed, resetKey, enabled, maxConcurrent, lang]);
 
   return displayed;
 }

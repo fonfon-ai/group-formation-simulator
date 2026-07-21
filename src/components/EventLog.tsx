@@ -3,18 +3,41 @@ import type { LogTag, SimulationState } from "../simulation/types";
 import type { SpeechEvent } from "../simulation/speech";
 import { buildAgentLabelMap, formatSpeechDebugMeta, formatSpeechLogMessage } from "./speechDisplay";
 import { formatEffectLine, formatInterpretationFactorLine, formatInterpretationLine } from "./speechEffectsDisplay";
+import { useLang } from "../i18n/lang";
+import type { Lang } from "../i18n/types";
 
 type FilterKey = "all" | "observerJoiner" | "nucleus" | "groupConfirmed" | "leave" | "speech" | "speechEffect";
 
-const FILTERS: Array<{ key: FilterKey; label: string; tag?: LogTag }> = [
-  { key: "all", label: "All events" },
-  { key: "observerJoiner", label: "observerJoiner only", tag: "observerJoiner" },
-  { key: "nucleus", label: "Core-forming events only", tag: "nucleus" },
-  { key: "groupConfirmed", label: "Group-confirmed events only", tag: "groupConfirmed" },
-  { key: "leave", label: "Leave events only", tag: "leave" },
-  { key: "speech", label: "Speech only" },
-  { key: "speechEffect", label: "Speech effects only" },
+const FILTERS: Array<{ key: FilterKey; label: Record<Lang, string>; tag?: LogTag }> = [
+  { key: "all", label: { en: "All events", ja: "全ログ" } },
+  { key: "observerJoiner", label: { en: "observerJoiner only", ja: "observerJoinerのみ" }, tag: "observerJoiner" },
+  { key: "nucleus", label: { en: "Core-forming events only", ja: "核形成イベントのみ" }, tag: "nucleus" },
+  { key: "groupConfirmed", label: { en: "Group-confirmed events only", ja: "グループ成立イベントのみ" }, tag: "groupConfirmed" },
+  { key: "leave", label: { en: "Leave events only", ja: "離脱イベントのみ" }, tag: "leave" },
+  { key: "speech", label: { en: "Speech only", ja: "発言のみ" } },
+  { key: "speechEffect", label: { en: "Speech effects only", ja: "発言効果のみ" } },
 ];
+
+const UI = {
+  en: {
+    title: "Event log",
+    show: "Show:",
+    truncated: (shown: number, total: number) => `Showing only the latest ${shown} of ${total}.`,
+    showAll: "Show all",
+    empty: "No events yet.",
+    noMatch: "No matching log entries.",
+    factorBreakdown: "Interpretation factor breakdown",
+  },
+  ja: {
+    title: "状態ログ",
+    show: "表示:",
+    truncated: (shown: number, total: number) => `直近${shown}件のみ表示中(全${total}件)。`,
+    showAll: "すべて表示",
+    empty: "まだイベントはありません。",
+    noMatch: "該当するログはありません。",
+    factorBreakdown: "解釈のfactor内訳",
+  },
+} as const;
 
 // 発言効果(解釈/効果)の行が一度に大量になっても操作を妨げないよう、既定では末尾からこの件数だけ表示する
 // (Issue #98の受入条件: 「長い履歴の折りたたみ・件数上限等を設け、既存観察UIを妨げない」)。
@@ -38,7 +61,7 @@ type Props = {
   state: SimulationState;
 };
 
-function buildTimeline(state: SimulationState, labelById: Map<string, string>): TimelineRow[] {
+function buildTimeline(state: SimulationState, labelById: Map<string, string>, lang: Lang): TimelineRow[] {
   const stateRows: TimelineRow[] = state.log.map((entry, i) => ({
     kind: "state",
     key: `state-${entry.tick}-${i}`,
@@ -51,21 +74,21 @@ function buildTimeline(state: SimulationState, labelById: Map<string, string>): 
     kind: "speech",
     key: event.id,
     tick: event.tick,
-    message: formatSpeechLogMessage(event, labelById),
+    message: formatSpeechLogMessage(event, labelById, lang),
     meta: formatSpeechDebugMeta(event, labelById),
   }));
   const interpretationRows: TimelineRow[] = (state.speechInterpretationLog ?? []).map((interpretation) => ({
     kind: "speechInterpretation",
     key: interpretation.id,
     tick: interpretation.tick,
-    message: formatInterpretationLine(interpretation, labelById),
-    meta: interpretation.factors.map((factor) => formatInterpretationFactorLine(factor)).join(" / "),
+    message: formatInterpretationLine(interpretation, labelById, lang),
+    meta: interpretation.factors.map((factor) => formatInterpretationFactorLine(factor, lang)).join(" / "),
   }));
   const effectRows: TimelineRow[] = (state.speechEffectLog ?? []).map((effect) => ({
     kind: "speechEffect",
     key: effect.id,
     tick: effect.occurredTick,
-    message: formatEffectLine(effect, labelById),
+    message: formatEffectLine(effect, labelById, lang),
     meta: `speechEventId: ${effect.speechEventId} / reason: ${effect.reason} / speaker: ${labelById.get(effect.speakerId) ?? effect.speakerId}`,
   }));
   // 状態ログ→発言ログ→解釈ログ→効果ログの順に連結してからtickだけでソートする(Array#sortは
@@ -74,12 +97,14 @@ function buildTimeline(state: SimulationState, labelById: Map<string, string>): 
 }
 
 export function EventLog({ state }: Props) {
+  const { lang } = useLang();
+  const t = UI[lang];
   const [filter, setFilter] = useState<FilterKey>("all");
   const [showAllRows, setShowAllRows] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
   const labelById = useMemo(() => buildAgentLabelMap(state.agents), [state.agents]);
-  const timeline = useMemo(() => buildTimeline(state, labelById), [state, labelById]);
+  const timeline = useMemo(() => buildTimeline(state, labelById, lang), [state, labelById, lang]);
 
   const activeTag = FILTERS.find((f) => f.key === filter)?.tag;
   const filteredRows = useMemo(() => {
@@ -110,10 +135,10 @@ export function EventLog({ state }: Props) {
 
   return (
     <div className="panel event-log">
-      <h2>Event log</h2>
+      <h2>{t.title}</h2>
       <div className="event-log-filters">
         <label className="event-log-filter-label" htmlFor="event-log-filter-select">
-          Show:
+          {t.show}
         </label>
         <select
           id="event-log-filter-select"
@@ -123,23 +148,23 @@ export function EventLog({ state }: Props) {
         >
           {FILTERS.map((f) => (
             <option key={f.key} value={f.key}>
-              {f.label}
+              {f.label[lang]}
             </option>
           ))}
         </select>
       </div>
       {isTruncated && (
         <p className="event-log-truncation-notice">
-          Showing only the latest {ROW_DISPLAY_LIMIT} of {filteredRows.length}.
+          {t.truncated(ROW_DISPLAY_LIMIT, filteredRows.length)}
           <button type="button" className="event-log-show-all-button" onClick={() => setShowAllRows(true)}>
-            Show all
+            {t.showAll}
           </button>
         </p>
       )}
       <div className="event-log-list" ref={listRef}>
         {visibleRows.length === 0 && (
           <p className="event-log-empty">
-            {timeline.length === 0 ? "No events yet." : "No matching log entries."}
+            {timeline.length === 0 ? t.empty : t.noMatch}
           </p>
         )}
         {visibleRows.map((row) =>
@@ -152,7 +177,7 @@ export function EventLog({ state }: Props) {
             <div key={row.key} className="event-log-entry event-log-entry--speech-effect">
               <div className="event-log-entry-message">🧠 {row.message}</div>
               <details className="event-log-entry-meta-details">
-                <summary>Interpretation factor breakdown</summary>
+                <summary>{t.factorBreakdown}</summary>
                 <div className="event-log-entry-meta">{row.meta}</div>
               </details>
             </div>

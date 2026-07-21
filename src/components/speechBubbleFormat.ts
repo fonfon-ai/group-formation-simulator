@@ -1,21 +1,23 @@
 import type { SpeechEvent } from "../simulation/speech";
 import { resolveSpeechEventText } from "../simulation/speechTemplates";
 import { formatSpeechDestination } from "./speechDisplay";
+import type { Lang } from "../i18n/types";
 
 /**
  * `SpeechEvent`をCanvas上の発言吹き出し用の1本のテキストへ組み立てる。
  *
- * - 先頭に💬を付け、色に頼らず「これは発言(心の声ではない)」と分かる手がかりを
- *   テキスト自体にも埋め込む(`EventLog`が発言行に💬を使っているのと表記を揃える)。
- * - `target`/`audience`がある場合は`formatSpeechDestination`(EventLog/Inspectorと共通)で
- *   宛先の補助表現を組み立て、末尾に「→」付きで付与する。どちらも無ければ本文のみ。
- * - 折り返し・吹き出し内での配置は`thoughtBubbleLayout.ts`の既存関数(`wrapThoughtText`
- *   経由)をそのまま再利用するため、ここでは1本の文字列を返すだけでよい。
+ * - 先頭に💬を付け、色に頼らず「これは発言(心の声ではない)」と分かる手がかりをテキストにも埋め込む。
+ * - 宛先は吹き出し内で短く収まるよう compact 表記にする(ブロードキャストは英語 "nearby" / 日本語 "周囲へ")。
+ *   状態ログ側(`formatSpeechDestination`)はより丁寧な "to those nearby" を使う。
+ * - `lang`未指定時は英語。
  */
-export function formatSpeechBubbleText(event: SpeechEvent, labelById: Map<string, string>): string {
-  // Keep the on-canvas bubble compact: a broadcast uses a short "(nearby)" hint instead of the
-  // event log's fuller "to those nearby", so the bubble doesn't truncate its own destination.
-  const destination = event.audience === "nearby" ? "nearby" : formatSpeechDestination(event, labelById);
-  const text = resolveSpeechEventText(event);
+export function formatSpeechBubbleText(event: SpeechEvent, labelById: Map<string, string>, lang: Lang = "en"): string {
+  const destination =
+    event.audience === "nearby"
+      ? lang === "ja"
+        ? "周囲へ"
+        : "nearby"
+      : formatSpeechDestination(event, labelById, lang);
+  const text = resolveSpeechEventText(event, lang);
   return `💬${text}${destination ? ` (${destination})` : ""}`;
 }

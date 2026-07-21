@@ -1,4 +1,6 @@
 import type { Agent, SimParams } from "./types";
+import type { Localized } from "./presets";
+import type { Lang } from "../i18n/types";
 import { clamp, distance } from "./model";
 import type { SeededRandom } from "./random";
 
@@ -34,18 +36,15 @@ export type InterventionParamAdjustments = Partial<SimParams>;
 
 export type InterventionScenario = {
   id: InterventionScenarioId;
-  name: string;
-  description: string;
+  name: Localized;
+  description: Localized;
   category: InterventionCategory;
   /** この介入が期待する効果の説明(人間向けの文章。数値的な保証ではない) */
-  expectedEffect: string;
+  expectedEffect: Localized;
   /** `SimParams`への単純な加算補正で近似できる部分。`none`や近似不能な場合は省略 */
   paramAdjustments?: InterventionParamAdjustments;
-  /**
-   * 単純なパラメータ補正だけでは表現しきれず、engine.ts側に追加ロジックが必要な効果の説明。
-   * Phase Cの対応範囲外(型・カタログの整備のみ)のため、ここでは説明のみを持たせ実装はしない。
-   */
-  engineLogicNotes?: string;
+  // 各介入のengine側追加ロジックの説明は、公開バンドルに載せないため文字列フィールドではなく
+  // 下の各シナリオ定義のコメント(「engine実装メモ」)として保持する。
 };
 
 /** `runSimulationToEnd`/`runMonteCarlo`等に介入シナリオを渡す際の実行時オプション */
@@ -65,122 +64,165 @@ const UNIT_RANGE_KEYS: readonly (keyof SimParams)[] = [
 
 export const NONE_INTERVENTION: InterventionScenario = {
   id: "none",
-  name: "No intervention",
-  description: "No intervention is made to the setting. The scenario runs on the preset alone.",
+  name: { en: "No intervention", ja: "介入なし" },
+  description: {
+    en: "No intervention is made to the setting. The scenario runs on the preset alone.",
+    ja: "場の設計に対する介入を何も行わない。通常のプリセットのみで進行する。",
+  },
   category: "none",
-  expectedEffect: "A baseline for observing the preset's behavior as-is.",
+  expectedEffect: {
+    en: "A baseline for observing the preset's behavior as-is.",
+    ja: "既存プリセットの挙動をそのまま観察するための基準点(ベースライン)。",
+  },
 };
 
 export const INTERVENTION_SCENARIOS: InterventionScenario[] = [
   NONE_INTERVENTION,
   {
     id: "explicit-meeting-point",
-    name: "Explicit meeting point",
-    description: `The organizer explicitly announces a meeting point: "Anyone coming, let's gather in front of the venue."`,
+    name: { en: "Explicit meeting point", ja: "集合場所の明示" },
+    description: {
+      en: `The organizer explicitly announces a meeting point: "Anyone coming, let's gather in front of the venue."`,
+      ja: "幹事が「行く人は店の前に集まりましょう」と、集合場所を明示的にアナウンスする。",
+    },
     category: "publicCoordination",
-    expectedEffect:
-      "It becomes clear where to head, so less time is spent waiting and watching without finding a circle. Joining late also gets easier.",
+    expectedEffect: {
+      en: "It becomes clear where to head, so less time is spent waiting and watching without finding a circle. Joining late also gets easier.",
+      ja: "どこに向かえばよいかが明確になり、輪を見つけられず様子見のまま留まる時間が減る。後乗りもしやすくなる。",
+    },
     paramAdjustments: {
       ambiguityDuration: 0.2,
       lateJoinEase: 0.1,
     },
-    engineLogicNotes:
-      "engine.tsのcreateInitialStateで、founder不在の低圧なGroupCandidate(isPublicMeetingPoint)を" +
-      "初期状態に1つ配置する。通常のforming候補と同じ経路で合流・成立できるが、反応の薄さによる" +
-      "早期解散の対象からは除外され、attractivenessでも影響回避の壁を下げて評価される。",
+    // engine実装メモ: engine.tsのcreateInitialStateで、founder不在の低圧なGroupCandidate(isPublicMeetingPoint)を
+    // 初期状態に1つ配置する。通常のforming候補と同じ経路で合流・成立できるが、反応の薄さによる
+    // 早期解散の対象からは除外され、attractivenessでも影響回避の壁を下げて評価される。
   },
   {
     id: "late-join-ok",
-    name: "Explicit late-join permission",
-    description: `Someone explicitly declares "late joins are OK" and "you can catch up later."`,
+    name: { en: "Explicit late-join permission", ja: "途中参加OKの明示" },
+    description: {
+      en: `Someone explicitly declares "late joins are OK" and "you can catch up later."`,
+      ja: "「途中参加OK」「後から合流もOK」と誰かが明示的に宣言する。",
+    },
     category: "socialPermission",
-    expectedEffect: "The psychological barrier to joining later drops, raising the chance of joining a confirmed group.",
+    expectedEffect: {
+      en: "The psychological barrier to joining later drops, raising the chance of joining a confirmed group.",
+      ja: "後から合流することへの心理的ハードルが下がり、成立済みグループへの参加確率が上がる。",
+    },
     paramAdjustments: {
       lateJoinEase: 0.3,
     },
-    engineLogicNotes:
-      "engine.tsのattractivenessで、成立済みグループへのスコアに固定ボーナス(LATE_JOIN_OK_CONFIRMED_BONUS)を" +
-      "加える(未確定の輪へは影響しない)。あわせてhasWelcomingConfirmedGroup判定の" +
-      "「歓迎されていない」とみなすclique占有率のしきい値を引き上げ(0.5→0.85)、" +
-      "ある程度clique優勢な成立済みグループでもobserverJoinerの「行き場がない」ことに起因する" +
-      "追加ストレスが発生しにくくする。介入なしとの差分はcreateInitialStateの" +
-      "lateJoinPermissionAnnouncedログでも確認できる。",
+    // engine実装メモ: engine.tsのattractivenessで、成立済みグループへのスコアに固定ボーナス(LATE_JOIN_OK_CONFIRMED_BONUS)を
+    // 加える(未確定の輪へは影響しない)。あわせてhasWelcomingConfirmedGroup判定の
+    // 「歓迎されていない」とみなすclique占有率のしきい値を引き上げ(0.5→0.85)、
+    // ある程度clique優勢な成立済みグループでもobserverJoinerの「行き場がない」ことに起因する
+    // 追加ストレスが発生しにくくする。介入なしとの差分はcreateInitialStateの
+    // lateJoinPermissionAnnouncedログでも確認できる。
   },
   {
     id: "light-observer-invitation",
-    name: "A gentle nudge to the observerJoiner",
-    description: `One of the participants gently invites the observerJoiner: "Want to come along?"`,
+    name: { en: "A gentle nudge to the observerJoiner", ja: "observerJoinerへの軽い声かけ" },
+    description: {
+      en: `One of the participants gently invites the observerJoiner: "Want to come along?"`,
+      ja: "参加者のうち1人が、observerJoinerに「一緒行く?」と軽く声をかける。",
+    },
     category: "targetedSupport",
-    expectedEffect:
-      "The observerJoiner gets a reason to approach without having to move the room themselves, so even someone with a wall of influence-avoidance finds it easier to near a circle.",
+    expectedEffect: {
+      en: "The observerJoiner gets a reason to approach without having to move the room themselves, so even someone with a wall of influence-avoidance finds it easier to near a circle.",
+      ja: "observerJoiner自身が場を動かさなくても接近のきっかけが生まれ、影響回避の壁がある人でも輪に近づきやすくなる。",
+    },
     paramAdjustments: {
       observerInfluenceAvoidance: -0.2,
       observerLeaveEase: -0.1,
     },
-    engineLogicNotes:
-      "engine.tsのstepSimulationで、observerJoinerが`undecided`のまま一定tick経過し、" +
-      "stressがleaveThresholdの一定割合以上・leaveThreshold未満のときに1回だけ" +
-      "shouldTriggerLightObserverInvitationが成立する。selectInvitationAgentが近傍の" +
-      "joined/forming/approachingなエージェント(いなければ最寄りの非observerJoiner)をrng経由で選び、" +
-      "observerInvitedイベントとしてログに残す(声をかけた側の情報も含む)。声かけ後は" +
-      "LIGHT_INVITATION_BOOST_WINDOWの間だけ、接近確率の倍率補正・influenceAvoidanceの壁の緩和" +
-      "(完全に消さず残す)・「行き場がない」ことに起因する追加ストレスの軽減、という一時的な" +
-      "後押しが働く。強制的にapproaching状態へ移行させることはせず、あくまで確率を動かすだけに" +
-      "留めることで、声かけがobserverJoinerの参加を保証しないようにしている。",
+    // engine実装メモ: engine.tsのstepSimulationで、observerJoinerが`undecided`のまま一定tick経過し、
+    // stressがleaveThresholdの一定割合以上・leaveThreshold未満のときに1回だけ
+    // shouldTriggerLightObserverInvitationが成立する。selectInvitationAgentが近傍の
+    // joined/forming/approachingなエージェント(いなければ最寄りの非observerJoiner)をrng経由で選び、
+    // observerInvitedイベントとしてログに残す(声をかけた側の情報も含む)。声かけ後は
+    // LIGHT_INVITATION_BOOST_WINDOWの間だけ、接近確率の倍率補正・influenceAvoidanceの壁の緩和
+    // (完全に消さず残す)・「行き場がない」ことに起因する追加ストレスの軽減、という一時的な
+    // 後押しが働く。強制的にapproaching状態へ移行させることはせず、あくまで確率を動かすだけに
+    // 留めることで、声かけがobserverJoinerの参加を保証しないようにしている。
   },
   {
     id: "short-ambiguity-window",
-    name: "Shorter ambiguity window",
-    description: "Shorten the ambiguous stretch where everyone stands around outside waiting (e.g. check people's intentions early).",
+    name: { en: "Shorter ambiguity window", ja: "曖昧時間の短縮" },
+    description: {
+      en: "Shorten the ambiguous stretch where everyone stands around outside waiting (e.g. check people's intentions early).",
+      ja: "店外で全員が様子見になる曖昧な時間そのものを短くする(例: 早めに意思確認の声をかける)。",
+    },
     category: "timeDesign",
-    expectedEffect: "Less burden from a drawn-out ambiguous phase, so things tend to settle before stress crosses the threshold and people leave.",
+    expectedEffect: {
+      en: "Less burden from a drawn-out ambiguous phase, so things tend to settle before stress crosses the threshold and people leave.",
+      ja: "曖昧フェーズが長引く負担が減り、ストレスが閾値を超えて離脱する前に決着がつきやすくなる。",
+    },
     paramAdjustments: {
       ambiguityDuration: 0.2,
     },
-    engineLogicNotes:
-      "engine.tsのstepSimulationで、未成立候補の弱反応解散/期限切れの判定tick数(CANDIDATE_WEAK_RESPONSE_AGE/" +
-      "CANDIDATE_MAX_AGE)を短縮し、行き詰まった輪の解散/期限切れ判断を早める。あわせて" +
-      "observerJoinerの「行き場がない」ことに起因する追加ストレスの蓄積率も下げ、" +
-      "単純にambiguityDurationを下げた場合に起きる「短いほどストレスが増える」逆効果を避ける。",
+    // engine実装メモ: engine.tsのstepSimulationで、未成立候補の弱反応解散/期限切れの判定tick数(CANDIDATE_WEAK_RESPONSE_AGE/
+    // CANDIDATE_MAX_AGE)を短縮し、行き詰まった輪の解散/期限切れ判断を早める。あわせて
+    // observerJoinerの「行き場がない」ことに起因する追加ストレスの蓄積率も下げ、
+    // 単純にambiguityDurationを下げた場合に起きる「短いほどストレスが増える」逆効果を避ける。
   },
   {
     id: "predecided-venue",
-    name: "Next-round venue decided in advance",
-    description: "Even if it's still unclear who's going, the venue for the next round is settled ahead of time.",
+    name: { en: "Next-round venue decided in advance", ja: "二次会会場の事前決定" },
+    description: {
+      en: "Even if it's still unclear who's going, the venue for the next round is settled ahead of time.",
+      ja: "二次会に行くかどうかは曖昧なままでも、場所だけは先に決めておく。",
+    },
     category: "publicCoordination",
-    expectedEffect:
-      "Removing just the \"where to go\" uncertainty up front makes it easier to focus on the go/no-go decision, and easier to approach a circle.",
+    expectedEffect: {
+      en: "Removing just the \"where to go\" uncertainty up front makes it easier to focus on the go/no-go decision, and easier to approach a circle.",
+      ja: "「どこに行くか」の不確実性だけを先に取り除くことで、行くかどうかの判断に集中しやすくなり、輪への接近もしやすくなる。",
+    },
     paramAdjustments: {
       lateJoinEase: 0.15,
     },
-    engineLogicNotes:
-      "engine.tsのattractivenessで、成立済みグループへのスコアに直接ボーナスを加え、成立後の接近確率を上げる。" +
-      "あわせてobserverJoinerの「行き場がない」ことに起因する追加ストレスの蓄積率も下げ、" +
-      "行き先の不確実性だけを先に取り除く効果を表現する。",
+    // engine実装メモ: engine.tsのattractivenessで、成立済みグループへのスコアに直接ボーナスを加え、成立後の接近確率を上げる。
+    // あわせてobserverJoinerの「行き場がない」ことに起因する追加ストレスの蓄積率も下げ、
+    // 行き先の不確実性だけを先に取り除く効果を表現する。
   },
   {
     id: "anonymous-low-pressure-intent",
-    name: "Anonymous, low-pressure signaling",
-    description:
-      "Make signaling interest anonymous and low-pressure (e.g. circling on paper instead of raising a hand, quietly tapping a stamp).",
+    name: { en: "Anonymous, low-pressure signaling", ja: "匿名・低圧の意思表明" },
+    description: {
+      en: "Make signaling interest anonymous and low-pressure (e.g. circling on paper instead of raising a hand, quietly tapping a stamp).",
+      ja: "参加表明を匿名・低圧な方法にする(例: 挙手ではなく紙に丸をつける、こっそりスタンプを押す等)。",
+    },
     category: "socialPermission",
-    expectedEffect:
-      "Even people high in influence-avoidance find it easier to signal \"I want to go\" when they can do so inconspicuously.",
+    expectedEffect: {
+      en: "Even people high in influence-avoidance find it easier to signal \"I want to go\" when they can do so inconspicuously.",
+      ja: "influenceAvoidanceが高い人でも、目立たない形でなら「行きたい」という意思を表明しやすくなる。",
+    },
     paramAdjustments: {
       observerInfluenceAvoidance: -0.3,
     },
-    engineLogicNotes:
-      "engine.tsのstepSimulationで3点補正する: (1) 未確定の輪(forming)への接近確率に" +
-      "ANONYMOUS_INTENT_APPROACH_MULTIPLIERをかけて少し上げる(成立済みグループへの接近はlate-join-ok側の役割のため対象外)、" +
-      "(2) 核形成確率にANONYMOUS_INTENT_FORMING_PROBABILITY_MULTIPLIERをかけ、" +
-      "「参加したい人が一定数いる」匿名シグナルが主導者/既存グループの核形成を後押しする様子を" +
-      "控えめな倍率で近似する(強い主導者を追加したような挙動にはしない)、" +
-      "(3) observerJoinerの「行き場がない」ことに起因する追加ストレスにANONYMOUS_INTENT_STRESS_MULTIPLIERをかけて下げる。",
+    // engine実装メモ: engine.tsのstepSimulationで3点補正する: (1) 未確定の輪(forming)への接近確率に
+    // ANONYMOUS_INTENT_APPROACH_MULTIPLIERをかけて少し上げる(成立済みグループへの接近はlate-join-ok側の役割のため対象外)、
+    // (2) 核形成確率にANONYMOUS_INTENT_FORMING_PROBABILITY_MULTIPLIERをかけ、
+    // 「参加したい人が一定数いる」匿名シグナルが主導者/既存グループの核形成を後押しする様子を
+    // 控えめな倍率で近似する(強い主導者を追加したような挙動にはしない)、
+    // (3) observerJoinerの「行き場がない」ことに起因する追加ストレスにANONYMOUS_INTENT_STRESS_MULTIPLIERをかけて下げる。
   },
 ];
 
 export function getInterventionById(id: InterventionScenarioId): InterventionScenario {
   return INTERVENTION_SCENARIOS.find((scenario) => scenario.id === id) ?? NONE_INTERVENTION;
+}
+
+export function interventionName(scenario: InterventionScenario, lang: Lang = "en"): string {
+  return scenario.name[lang];
+}
+
+export function interventionDescription(scenario: InterventionScenario, lang: Lang = "en"): string {
+  return scenario.description[lang];
+}
+
+export function interventionExpectedEffect(scenario: InterventionScenario, lang: Lang = "en"): string {
+  return scenario.expectedEffect[lang];
 }
 
 /** `intervention`(未指定なら介入なし)に対応する`InterventionScenario`を解決する */

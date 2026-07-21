@@ -1,4 +1,5 @@
 import type { SimParams } from "./types";
+import type { Lang } from "../i18n/types";
 
 export const DEFAULT_PARAMS: SimParams = {
   populationSize: 14,
@@ -13,19 +14,24 @@ export const DEFAULT_PARAMS: SimParams = {
   observerLeaveEase: 0.6,
 };
 
+/** A short piece of UI text available in each supported language. */
+export type Localized = Record<Lang, string>;
+
 export type ScenarioPreset = {
   id: string;
-  name: string;
-  description: string;
+  name: Localized;
+  description: Localized;
   params: SimParams;
 };
 
 export const PRESETS: ScenarioPreset[] = [
   {
     id: "natural",
-    name: "1. A next round forms naturally",
-    description:
-      "There's a leader and several people keen on a next round. A standard case where the observerJoiner can join easily too.",
+    name: { en: "1. A next round forms naturally", ja: "1. 自然に二次会が成立する場" },
+    description: {
+      en: "There's a leader and several people keen on a next round. A standard case where the observerJoiner can join easily too.",
+      ja: "主導者がいて、二次会意欲の高い人も複数いる。observerJoinerも参加しやすい標準的なケース。",
+    },
     params: {
       ...DEFAULT_PARAMS,
       numLeaders: 2,
@@ -36,9 +42,11 @@ export const PRESETS: ScenarioPreset[] = [
   },
   {
     id: "ambiguous-dissolve",
-    name: "2. Everyone drifts apart in ambiguity",
-    description:
-      "No leader; everyone waits and watches until time runs out. The observerJoiner tends to head home.",
+    name: { en: "2. Everyone drifts apart in ambiguity", ja: "2. 曖昧なまま解散する場" },
+    description: {
+      en: "No leader; everyone waits and watches until time runs out. The observerJoiner tends to head home.",
+      ja: "主導者がおらず、皆が様子見のまま時間切れになる。observerJoinerは帰宅しやすい。",
+    },
     params: {
       ...DEFAULT_PARAMS,
       numLeaders: 0,
@@ -50,9 +58,11 @@ export const PRESETS: ScenarioPreset[] = [
   },
   {
     id: "strong-leader",
-    name: "3. A strong leader drives the group",
-    description:
-      "A single strong leader forms a core early, and many people are drawn to it.",
+    name: { en: "3. A strong leader drives the group", ja: "3. 強い主導者が場を作る場" },
+    description: {
+      en: "A single strong leader forms a core early, and many people are drawn to it.",
+      ja: "一人の強い主導者が早期に核を作り、多くの人がそこに引き寄せられる。",
+    },
     params: {
       ...DEFAULT_PARAMS,
       numLeaders: 1,
@@ -63,9 +73,11 @@ export const PRESETS: ScenarioPreset[] = [
   },
   {
     id: "late-join-culture",
-    name: "4. A late-join-friendly culture",
-    description:
-      "The cost of joining an already-formed group is low. The observerJoiner joins easily.",
+    name: { en: "4. A late-join-friendly culture", ja: "4. 後乗りしやすい文化" },
+    description: {
+      en: "The cost of joining an already-formed group is low. The observerJoiner joins easily.",
+      ja: "すでに形成されたグループへの参加コストが低い。observerJoinerが参加しやすい。",
+    },
     params: {
       ...DEFAULT_PARAMS,
       numLeaders: 1,
@@ -76,9 +88,11 @@ export const PRESETS: ScenarioPreset[] = [
   },
   {
     id: "leftover-free-grouping",
-    name: "5. Free-form grouping leaves people out",
-    description:
-      "There's no leader to bring everyone together; only pre-existing friend groups naturally coalesce. Ties are strong and there's little room to mix in later. The observerJoiner tends to end up isolated.",
+    name: { en: "5. Free-form grouping leaves people out", ja: "5. 自由グループ作りで余りやすい場" },
+    description: {
+      en: "There's no leader to bring everyone together; only pre-existing friend groups naturally coalesce. Ties are strong and there's little room to mix in later. The observerJoiner tends to end up isolated.",
+      ja: "全体をまとめる主導者はおらず、既存の仲良しグループだけが自然に固まっていく。既存の関係性が強く、後から混ざる余地が少ない。observerJoinerが孤立しやすい。",
+    },
     params: {
       ...DEFAULT_PARAMS,
       numLeaders: 0,
@@ -91,4 +105,12 @@ export const PRESETS: ScenarioPreset[] = [
 
 export function getPresetById(id: string): ScenarioPreset {
   return PRESETS.find((p) => p.id === id) ?? PRESETS[0];
+}
+
+export function presetName(preset: ScenarioPreset, lang: Lang = "en"): string {
+  return preset.name[lang];
+}
+
+export function presetDescription(preset: ScenarioPreset, lang: Lang = "en"): string {
+  return preset.description[lang];
 }

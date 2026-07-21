@@ -14,10 +14,52 @@
   border-bottom: 1px solid #2e303a;
 }
 
+.app-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .app-header h1 {
   font-size: 22px;
   font-weight: 600;
   margin-bottom: 6px;
+}
+
+/* 言語切替(英語/日本語)。ヘッダー右上に配置する2択セグメント */
+.language-toggle {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 1px solid #3a3d48;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.language-toggle-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: #9ca3af;
+  padding: 5px 12px;
+  font-size: 12.5px;
+  cursor: pointer;
+  transition: background-color 0.12s, color 0.12s;
+}
+
+.language-toggle-btn + .language-toggle-btn {
+  border-left: 1px solid #3a3d48;
+}
+
+.language-toggle-btn:hover {
+  background: #262932;
+  color: #e5e7eb;
+}
+
+.language-toggle-btn.is-active {
+  background: #3b82f6;
+  color: #fff;
 }
 
 .app-header p {

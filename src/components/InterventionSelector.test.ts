@@ -14,7 +14,7 @@ describe("InterventionSelector", () => {
     );
 
     for (const scenario of INTERVENTION_SCENARIOS) {
-      expect(html).toContain(scenario.name);
+      expect(html).toContain(scenario.name.en);
     }
     expect(html).toContain('value="none"');
   });

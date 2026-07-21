@@ -4,6 +4,25 @@ import type { SpeechIntent } from "../simulation/speech";
 import { ThoughtBubble } from "./ThoughtBubble";
 import { SpeechBubble } from "./SpeechBubble";
 import { computeThoughtBubbleLayouts, type ThoughtBubblePlacementInput } from "./thoughtBubbleLayout";
+import { useLang } from "../i18n/lang";
+import type { Lang } from "../i18n/types";
+
+const CANVAS_UI = {
+  en: {
+    confirmed: "Next-round group",
+    dissolved: "Dissolved circle",
+    expired: "Timed-out circle",
+    forming: "Forming circle",
+    ariaLabel: "Group formation simulation area",
+  },
+  ja: {
+    confirmed: "二次会グループ",
+    dissolved: "解散した輪",
+    expired: "時間切れの輪",
+    forming: "形成中の輪",
+    ariaLabel: "グループ形成シミュレーション領域",
+  },
+} as const;
 
 /**
  * 表示すべき心の声1件分。文言生成・寿命管理は呼び出し側(表示管理レイヤー)の責務で、ここでは受け取るだけ。
@@ -79,17 +98,18 @@ function candidateRingClass(candidate: GroupCandidate): string {
   }
 }
 
-function candidateLabel(candidate: GroupCandidate): string {
+function candidateLabel(candidate: GroupCandidate, lang: Lang): string {
+  const ui = CANVAS_UI[lang];
   switch (candidate.status) {
     case "confirmed":
-      return "Next-round group";
+      return ui.confirmed;
     case "dissolving":
     case "dissolved":
-      return "Dissolved circle";
+      return ui.dissolved;
     case "expired":
-      return "Timed-out circle";
+      return ui.expired;
     default:
-      return "Forming circle";
+      return ui.forming;
   }
 }
 
@@ -161,6 +181,7 @@ function buildSpeechPlacementInputs(
 }
 
 export function SimulationCanvas({ agents, groupCandidates, width, height, thoughts = [], speeches = [] }: Props) {
+  const { lang } = useLang();
   const speakingAgentIds = new Set(speeches.map((speech) => speech.agentId));
   const speechInputs = buildSpeechPlacementInputs(agents, speeches, width, height);
   const thoughtInputs = buildThoughtPlacementInputs(agents, thoughts, width, height, speakingAgentIds);
@@ -176,7 +197,7 @@ export function SimulationCanvas({ agents, groupCandidates, width, height, thoug
         width="100%"
         height={height}
         role="img"
-        aria-label="Group formation simulation area"
+        aria-label={CANVAS_UI[lang].ariaLabel}
       >
         <rect x={0} y={0} width={width} height={height} className="canvas-bg" />
 
@@ -190,7 +211,7 @@ export function SimulationCanvas({ agents, groupCandidates, width, height, thoug
               <circle cx={candidate.x} cy={candidate.y} r={54} className={candidateRingClass(candidate)} />
 
               <text x={candidate.x} y={candidate.y - 60} className="candidate-label">
-                {candidateLabel(candidate)} ({candidate.memberIds.length})
+                {candidateLabel(candidate, lang)} ({candidate.memberIds.length})
               </text>
             </g>
           );

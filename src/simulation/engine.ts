@@ -102,7 +102,7 @@ export function createInitialState(
   if (scenario.id !== "none") {
     log.push({
       tick: 0,
-      message: `${formatTick(0)} Intervention scenario "${scenario.name}" applied`,
+      message: `${formatTick(0)} Intervention scenario "${scenario.name.en}" applied`,
       tags: ["intervention"],
       eventType: "interventionApplied",
       metadata: { interventionId: scenario.id },
